@@ -10,6 +10,8 @@ A standalone, **in-browser** shot log + analysis tool for F-Class / long-range w
 > Everything runs locally in your browser. No server, no installs.
 
 ---
+Run it
+Live (GitHub Pages): https://mrimp.github.io/ShotLedger/
 
 ## Quick start
 
