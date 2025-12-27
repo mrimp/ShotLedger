@@ -1,0 +1,3117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ShotLedger v0 — Full Build (CSV + XLS Garmin)</title>
+<style>
+  :root{ --bg:#0b0f14; --panel:#111826; --panel2:#0f1724; --text:#e8eef7; --muted:#9fb0c5; --line:#22324a; --accent:#6ee7ff; --bad:#ff6b6b; --good:#7CFFB2; --warn:#ffd166;}
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{height:100%;background:var(--bg);color:var(--text);font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+  body{overflow-x:hidden;overflow-y:auto;}
+  .wrap{max-width:1200px;margin:18px auto;padding:0 14px;}
+  h1{font-size:18px;margin:0 0 10px 0;font-weight:700;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 8px 30px rgba(0,0,0,.25);}
+  .card h2{font-size:13px;margin:0 0 10px 0;color:var(--muted);font-weight:650;letter-spacing:.2px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{background:#152238;border:1px solid var(--line);color:var(--text);padding:8px 10px;border-radius:10px;cursor:pointer}
+  .btn:hover{border-color:#2f4668}
+  input[type=file]{color:var(--muted)}
+  select, input[type=text]{background:#0c1422;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:8px 10px;}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:#0c1422;color:var(--muted);font-size:12px}
+  .pill.good{color:var(--good);border-color:rgba(124,255,178,.25)}
+  .pill.bad{color:var(--bad);border-color:rgba(255,107,107,.25)}
+  .pill.warn{color:var(--warn);border-color:rgba(255,209,102,.25)}
+  table{width:100%;border-collapse:collapse}
+  th,td{border-bottom:1px solid var(--line);padding:7px 8px;vertical-align:top}
+  th{position:sticky;top:0;background:#0d1625;color:var(--muted);font-weight:650;text-align:left;z-index:60;box-shadow:0 2px 0 rgba(0,0,0,.35)}
+  td{color:var(--text)}
+  .small{color:var(--muted);font-size:12px}
+  .right{float:right}
+  .toast{position:fixed;right:16px;bottom:16px;max-width:360px;z-index:9999}
+  .toast .t{background:#0c1422;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:10px 12px;margin-top:8px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+
+/* --- Shot health + flags (v0 defaults) --- */
+tr.row-sighter td{ background: rgba(120,160,255,.08) !important; }
+tr.row-good td{ box-shadow: inset 4px 0 0 rgba(120,255,190,.35); }
+tr.row-watch td{ box-shadow: inset 4px 0 0 rgba(255,210,120,.35); }
+tr.row-problem td{ box-shadow: inset 4px 0 0 rgba(255,150,90,.40); }
+tr.row-bad td{ box-shadow: inset 4px 0 0 rgba(255,90,90,.45); }
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:2px 8px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  font-size:12px;line-height:18px;
+  white-space:nowrap;
+}
+.badge.red{ border-color: rgba(255,90,90,.35); background: rgba(255,90,90,.10); }
+.badge.amber{ border-color: rgba(255,210,120,.30); background: rgba(255,210,120,.10); }
+.badge.green{ border-color: rgba(120,255,190,.25); background: rgba(120,255,190,.08); }
+.chips{ display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+
+/* Flags: compact pill (severity visible without hover) */
+.flagpill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.06);
+  font-size:12px;
+  line-height:18px;
+  font-weight:800;
+  letter-spacing:.2px;
+  white-space:nowrap;
+}
+.flagpill.red{ border-color: rgba(255,96,96,0.55); background: rgba(255,96,96,0.10); }
+.flagpill.orange{ border-color: rgba(255,170,110,0.50); background: rgba(255,170,110,0.10); }
+.flagpill.amber{ border-color: rgba(255,220,128,0.50); background: rgba(255,220,128,0.10); }
+.chip{
+  display:inline-flex; align-items:center;
+  padding:2px 7px; border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  font-size:12px; line-height:18px;
+}
+.chip.red{ border-color: rgba(255,90,90,.35); background: rgba(255,90,90,.10); }
+.chip.amber{ border-color: rgba(255,210,120,.30); background: rgba(255,210,120,.10); }
+.chip.orange{ border-color: rgba(255,170,90,.35); background: rgba(255,170,90,.12); }
+.chip.dim{ opacity:.92; }
+.groupRow td{
+  position:relative;
+  background: linear-gradient(180deg, rgba(10,20,40,.96), rgba(10,20,40,.82));
+  z-index: 1;
+  border-top:1px solid rgba(255,255,255,.08);
+}
+.groupHead{
+  display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+}
+.groupLeft{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.groupTitle{
+  font-weight:800; letter-spacing:.2px;
+}
+.groupMeta{ opacity:.9; font-size:13px; display:flex; gap:10px; flex-wrap:wrap; }
+.groupRight{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.toggleLink{
+  cursor:pointer; user-select:none;
+  color: rgba(210,230,255,.9);
+  font-weight:700;
+}
+.spark{
+  width:96px; height:22px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:8px;
+  background: rgba(255,255,255,.04);
+}
+.tableTools{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:10px 0 6px; }
+.tableTools .btn{ padding:8px 12px; }
+.smallCtl{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+
+/* Manual inputs polish */
+.mi input, .mi textarea, .mi select{
+  width:100%;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(10,16,28,.70);
+  color: rgba(240,248,255,.95);
+  outline:none;
+}
+.mi textarea{ min-height:140px; resize:vertical; }
+.mi label{ display:block; margin-bottom:6px; opacity:.92; font-weight:700; }
+.miRow{ display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:10px; }
+@media (max-width: 1100px){ .miRow{ grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px){ .miRow{ grid-template-columns: 1fr; } }
+#manualBody.collapsed{ display:none; }
+
+
+
+/* Row banding (subtle) */
+tr.rowSighter td{ background: rgba(120,160,255,0.08) !important; box-shadow: inset 4px 0 0 rgba(120,160,255,0.35) !important; }
+tr.rowGood td{ background: rgba(64,255,128,0.04) !important; box-shadow: inset 4px 0 0 rgba(64,255,128,0.18) !important; }
+tr.rowWatch td{ background: rgba(255,220,128,0.05) !important; box-shadow: inset 4px 0 0 rgba(255,220,128,0.20) !important; }
+tr.rowProblem td{ background: rgba(255,170,96,0.06) !important; box-shadow: inset 4px 0 0 rgba(255,170,96,0.22) !important; }
+tr.rowBad td{ background: rgba(255,96,96,0.07) !important; box-shadow: inset 4px 0 0 rgba(255,96,96,0.24) !important; }
+tr.rowSighter td, tr.rowGood td, tr.rowWatch td, tr.rowProblem td, tr.rowBad td{
+  transition: background .15s ease, box-shadow .15s ease;
+}
+
+/* Flags column: stack "pills" vertically and keep them readable */
+.chips{ display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center; }
+
+/* Round pill style (like your screenshots) */
+.fpill.dim{ opacity:.90; }
+/* Tooltip */
+.tooltip{ cursor:help; }
+.tooltip:not(th){ position:relative; }
+th.tooltip{ position:sticky; }
+.tooltip[data-tip]:hover::after{
+  content: attr(data-tip);
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  top: calc(100% + 10px);
+  max-width: 320px;
+  white-space: pre-wrap;
+  background: rgba(12,18,30,0.98);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.25;
+  z-index: 9999;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.45);
+}
+.tooltip[data-tip]:hover::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  top: calc(100% + 4px);
+  border: 6px solid transparent;
+  border-bottom-color: rgba(12,18,30,0.98);
+  z-index: 10000;
+}
+
+
+/* ---- Row band shading (LOCKED override for visibility) ---- */
+tr.rowSighter td{ background: rgba(140,170,255,0.10) !important; box-shadow: inset 4px 0 0 rgba(140,170,255,0.40); }
+tr.rowGood td{ background: rgba(64,255,128,0.08) !important; box-shadow: inset 4px 0 0 rgba(64,255,128,0.38); }
+tr.rowWatch td{ background: rgba(255,220,128,0.10) !important; box-shadow: inset 4px 0 0 rgba(255,220,128,0.42); }
+tr.rowProblem td{ background: rgba(255,160,96,0.12) !important; box-shadow: inset 4px 0 0 rgba(255,160,96,0.46); }
+tr.rowBad td{ background: rgba(255,96,96,0.14) !important; box-shadow: inset 4px 0 0 rgba(255,96,96,0.52); }
+
+
+/* Floating table header (appears when the main header scrolls out of view) */
+#floatHeader{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  display:none;
+  z-index:9998;
+  background:#0d1625;
+  border-bottom:1px solid rgba(255,255,255,0.10);
+  box-shadow:0 10px 26px rgba(0,0,0,0.35);
+}
+#floatHeader .inner{
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 14px;
+}
+#floatHeader table{ width:100%; border-collapse:collapse; }
+#floatHeader th{
+  padding:7px 8px;
+  color:var(--muted);
+  font-weight:650;
+  text-align:left;
+  border-bottom:1px solid var(--line);
+  background:#0d1625;
+  white-space:nowrap;
+}
+
+/* Group header rows (per target/string) */
+tr.groupRow td{
+  position:sticky;
+  top:36px;
+  z-index:3;
+  background:linear-gradient(180deg, rgba(13,22,37,0.98), rgba(13,22,37,0.92));
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  padding:10px 10px;
+}
+tr.groupRow .twisty{display:inline-block;width:18px;color:var(--muted);margin-right:6px}
+tr.groupRow .gTitle{font-weight:750;letter-spacing:.2px}
+tr.groupRow .gMeta{margin-left:10px;color:var(--muted);font-size:12.5px}
+tr.groupRow:hover td{background:linear-gradient(180deg, rgba(18,30,50,0.98), rgba(18,30,50,0.92)); cursor:pointer}
+tr.groupRow.isCollapsed .gTitle{opacity:0.95}
+
+
+/* Manual inputs inside Imports card */
+#manualCard.manualInImports{
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.02);
+}
+#manualCard.manualInImports .mi textarea{ min-height: 160px; }
+
+</style>
+</head>
+<body>
+<div id="floatHeader"><div class="inner"><div style="overflow:auto" id="floatHeaderScroll"><table><thead><tr id="floatThead"></tr></thead></table></div></div></div>
+<div class="wrap">
+  <h1>ShotLedger v0 — Full Build (Garmin CSV + binary XLS, multi-chrono, pairing)</h1>
+
+  <div class="grid2">
+    <div class="card" id="importsCard">
+      <h2>Imports</h2>
+      <div class="controls">
+        <label class="btn">
+          ShotMarker CSV
+          <input id="fileSM" type="file" accept=".csv,text/csv" style="display:none" />
+        </label>
+
+        <label class="btn">
+          Garmin Chrono (multi: CSV/XLS)
+          <input id="fileGarmin" type="file" multiple
+                 accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                 style="display:none" />
+        </label>
+
+        <label class="btn">
+          AMP CSV
+          <input id="fileAMP" type="file" accept=".csv,text/csv" style="display:none" />
+        </label>
+
+        <button class="btn" id="btnLoadSample">Load sample</button>
+        <button class="btn" id="btnExportJSON">Export JSON</button>
+        <label class="btn">
+          Import JSON
+          <input id="fileJSON" type="file" accept=".json,application/json" style="display:none" />
+        </label>
+      </div>
+      <div id="status" class="small" style="margin-top:10px;white-space:pre-wrap"></div>
+    </div>
+
+    <div class="card">
+      <h2>Pairing: ShotMarker strings → Chrono sources</h2>
+      <div id="pairing"></div>
+      <div class="small" style="margin-top:8px">
+        Join logic: because ShotMarker “time” is relative, we join by <b>shot order inside each string</b>.
+      </div>
+    </div>
+  </div>
+
+  
+    <div class="card" id="manualCard">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+<h2 style="margin:0">Manual inputs</h2>
+<button class="btn ghost" id="btnToggleManual">Roll down</button>
+</div>
+<div id="manualBody" class="mi collapsed">
+<div class="small">Enter fields, then apply to <b>selected shots</b> (checkboxes) or an entire <b>string</b>. Saved in Export JSON.</div>
+
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px">
+  <button class="btn" id="btnApplySelected">Apply to selected</button>
+  <select id="applyStringSel" class="sel" style="min-width:240px"></select>
+  <button class="btn" id="btnApplyString">Apply to string</button>
+  <button class="btn ghost" id="btnClearSelected">Clear selection</button>
+  <span class="pill" id="selCount">Selected: 0</span>
+</div>
+
+<div class="miRow" style="margin-top:14px">
+  <div style="grid-column: 1 / -1">
+    <label>Primer Seat (in)</label>
+    <input id="inPrimerSeat" placeholder="e.g. 0.0035" />
+  </div>
+
+  <div style="grid-column: 1 / -1">
+    <label>Wind Zero Δ (MOA)</label>
+    <input id="inWindZero" placeholder="e.g. +0.25" />
+  </div>
+
+  <div style="grid-column: 1 / -1">
+    <label>Elev Zero Δ (MOA)</label>
+    <input id="inElevZero" placeholder="e.g. -0.10" />
+  </div>
+
+  <div style="grid-column: 1 / -1">
+    <label>Wind Call</label>
+    <input id="inWindCall" placeholder="e.g. hold 0.5L, 6–10mph" />
+  </div>
+
+  <div style="grid-column: 1 / -1">
+    <label>Notes</label>
+    <textarea id="inNotes" placeholder="free text (trigger, bag, mirage, condition change, mental note, etc.)"></textarea>
+  </div>
+</div>
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px">
+  <button class="btn ghost" id="btnClearFields">Clear fields</button>
+  <button class="btn ghost" id="btnClearFieldsSelected">Clear these fields on selected</button>
+</div>
+</div>
+
+
+</div>
+<div class="card" style="margin-top:10px">
+    <h2>Shots table</h2>
+    <div class="controls" style="margin-bottom:8px">
+      <span class="pill" id="pillShots">Shots: 0</span>
+      <span class="pill" id="pillSM">SM strings: 0</span>
+      <span class="pill" id="pillChrono">Chrono sources: 0</span>
+      <span class="pill" id="pillAMP">AMP traces: 0</span>
+    </div>
+    <div class="tableTools">
+      <div class="smallCtl">
+        <button class="btn ghost" id="btnToggleSighters">Hide sighters</button>
+        <span class="pill" id="pillShown">Shown: 0</span>
+      </div>
+      <div class="smallCtl">
+        <span class="small">Highlight:</span>
+        <select id="flagFilter" class="sel" style="min-width:220px">
+          <option value="all">All shots</option>
+          <option value="problem">Problem shots only</option>
+          <option value="good">Best shots only</option>
+          <option value="sighters">Sighters only</option>
+        </select>
+      </div>
+    </div>
+    <div id="tableScroll" style="overflow:auto;height:65vh;max-height:65vh;border:1px solid var(--line);border-radius:12px">
+      <table id="tbl">
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ------------------------- Schema + friendly headers ------------------------- */
+const SCHEMA = [
+  {key:"shot_index", label:"Shot #", type:"int"},
+  {key:"timestamp_local", label:"Time (local)", type:"string"},
+  {key:"distance_yd", label:"Distance (yd)", type:"int"},
+  {key:"session_id", label:"Session", type:"string"},
+  {key:"string_id", label:"String", type:"string"},
+  {key:"shot_index_in_string", label:"# in String", type:"int"},
+  {key:"impact_vert_moa", label:"Vert (MOA)", type:"number"},
+  {key:"impact_horiz_moa", label:"Horiz (MOA)", type:"number"},
+  {key:"impact_radial_moa", label:"Radial (MOA)", type:"number"},
+    {key:"__flags", label:"Flags", fmt:(v,r)=>v||""},
+{key:"shotmarker_target_id", label:"SM Target", type:"string"},
+  {key:"shotmarker_bull_id", label:"Bull", type:"string"},
+  {key:"score_value", label:"Score", type:"string"},
+  {key:"velocity_fps", label:"Vel (fps)", type:"number"},
+  {key:"chrono_shot_index", label:"Chrono #", type:"int"},
+  {key:"chrono_source_id", label:"Chrono Source", type:"string"},
+  {key:"amp_avg_force", label:"AMP Avg Force", type:"number"},
+  {key:"amp_peak_force", label:"AMP Peak", type:"number"},
+  {key:"amp_event_index", label:"AMP #", type:"int"},
+  {key:"amp_program", label:"AMP Program", type:"string"},
+  {key:"primer_seat_in", label:"Primer Seat (in)", type:"number"},
+  {key:"wind_zero_delta_moa", label:"Wind Zero Δ (MOA)", type:"number"},
+  {key:"elev_zero_delta_moa", label:"Elev Zero Δ (MOA)", type:"number"},
+  {key:"wind_call", label:"Wind Call", type:"string"},
+  {key:"is_sighter", label:"Sighter", type:"bool"},
+  {key:"join_confidence", label:"Join", type:"string"},
+  {key:"exclude", label:"Exclude", type:"bool"},
+  {key:"notes", label:"Notes", type:"string"},
+];
+
+
+const TOOLTIP_MAP = {
+  shot_index: "Global shot index across the dataset (after imports/joins).",
+  timestamp_local: "Local timestamp if available from ShotMarker or chrono file.",
+  distance_yd: "Range distance in yards (used for MOA sanity + filtering).",
+  session_id: "Session identifier (e.g., match day / practice session).",
+  string_id: "ShotMarker string (target) ID this shot belongs to.",
+  shot_index_in_string: "Shot number within the string/target (record shots only unless sighters shown).",
+  impact_vert_moa: "Vertical impact offset in MOA (absolute value is used for vertical flag thresholds).",
+  impact_horiz_moa: "Horizontal impact offset in MOA (wind / tracking).",
+  impact_radial_moa: "Radial (total) dispersion from center in MOA.",
+  __flags: "Per-shot flags based on your thresholds (Radial, Vertical, velocity dev, etc.).",
+  shotmarker_target_id: "Raw ShotMarker target identifier.",
+  shotmarker_bull_id: "Bull number (often empty for SM exports).",
+  score_value: "Scoring value if present in ShotMarker export (e.g., X/10/9).",
+  velocity_fps: "Velocity in feet per second (from paired chrono file).",
+  chrono_shot_index: "Chrono shot number within the paired chrono string.",
+  chrono_source_id: "Which chrono file/source this velocity came from.",
+  amp_avg_force: "AMP average force for that press (if joined).",
+  amp_peak_force: "AMP peak force for that press (if joined).",
+  amp_event_index: "AMP event index within the trace/file.",
+  amp_program: "AMP program name (if present).",
+  primer_seat_in: "Manual: primer seating depth (in).",
+  wind_zero_delta_moa: "Manual: wind zero change (MOA).",
+  elev_zero_delta_moa: "Manual: elevation zero change (MOA).",
+  wind_call: "Manual: wind call notes (e.g., 0.5L, 1R).",
+  is_sighter: "Sighter flag (sighters are shaded and can be hidden).",
+  join: "Join toggle (used for linking/import workflows).",
+  exclude: "Exclude toggle (removes shot from calculations).",
+  notes: "Freeform notes for that shot/string."
+};
+
+
+
+const FRIENDLY_HEADER_MAP = {
+  "Shot #":"shot_index",
+  "Time (local)":"timestamp_local",
+  "Distance (yd)":"distance_yd",
+  "Session":"session_id",
+  "String":"string_id",
+  "# in String":"shot_index_in_string",
+  "Vert (MOA)":"impact_vert_moa",
+  "Horiz (MOA)":"impact_horiz_moa",
+  "Radial (MOA)":"impact_radial_moa",
+  "SM Target":"shotmarker_target_id",
+  "Bull":"shotmarker_bull_id",
+  "Score":"score_value",
+  "Vel (fps)":"velocity_fps",
+  "Chrono #":"chrono_shot_index",
+  "Chrono Source":"chrono_source_id",
+  "AMP Avg Force":"amp_avg_force",
+  "AMP Peak":"amp_peak_force",
+  "AMP #":"amp_event_index",
+  "AMP Program":"amp_program",
+  "Primer Seat (in)":"primer_seat_in",
+  "Wind Zero Δ (MOA)":"wind_zero_delta_moa",
+  "Elev Zero Δ (MOA)":"elev_zero_delta_moa",
+  "Wind Call":"wind_call",
+  "Sighter":"is_sighter",
+  "Join":"join_confidence",
+  "Exclude":"exclude",
+  "Notes":"notes"
+};
+
+/* ------------------------- State ------------------------- */
+const state = {
+  selectedShotIds: new Set(),
+  showSighters: true,
+  collapsedStrings: new Set(),
+  flagFilter: 'all',
+  shots: [],                 // flat shot rows
+  smStrings: [],             // {id, session_id, string_id, distance_yd, shots:[...]}
+  chronoSources: [],         // {name, rows:[{...}], headers:[...], count}
+  amp: { traces: [], meta:{} }, // {traces:[{idx, peak, terminal, flyer, excluded}]}
+  pairing: {}                // smStringId -> chronoSourceName
+};
+
+/* ------------------------- UI helpers ------------------------- */
+function $(id){ return document.getElementById(id); }
+function toast(title, msg){
+  const box = $("toast");
+  const div = document.createElement("div");
+  div.className = "t";
+  div.innerHTML = `<div style="font-weight:700">${escapeHtml(title)}</div><div class="small" style="margin-top:4px;white-space:pre-wrap">${escapeHtml(msg||"")}</div>`;
+  box.appendChild(div);
+  setTimeout(()=>{ div.style.opacity="0"; div.style.transition="opacity .25s"; }, 3500);
+  setTimeout(()=>{ div.remove(); }, 4200);
+}
+function setStatus(s){ $("status").textContent = s; }
+function escapeHtml(s){ return String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+
+function fmtCell(key, v){
+  if(v===undefined || v===null) return "";
+  if(key==="impact_vert_moa" || key==="impact_horiz_moa" || key==="impact_radial_moa" ||
+     key==="wind_zero_delta_moa" || key==="elev_zero_delta_moa"){
+    const n = Number(v);
+    if(!isFinite(n)) return "";
+    const s = n.toFixed(2);
+    return (n>0 ? "+"+s : s);
+  }
+  if(key==="velocity_fps"){
+    if(v==="") return "";
+    const n = Number(v);
+    return isFinite(n) ? String(Math.round(n)) : "";
+  }
+  if(key==="amp_avg_force" || key==="amp_peak_force"){
+    const n = Number(v);
+    return isFinite(n) ? n.toFixed(1) : "";
+  }
+  if(key==="is_sighter" || key==="exclude"){
+    return v ? "✓" : "";
+  }
+  return String(v);
+}
+
+/* --------------------- Shot health + string summaries -------------------- */
+// NOTE: keep this separate from the per-shot/string flag thresholds further below.
+// This block is used by scoreShot() heuristics.
+const DEFAULT_THRESH_SCORE = {
+  vel_sd_problem: 12,   // fps
+  vel_sd_bad:     18,
+  vel_es_problem: 35,
+  vel_es_bad:     55,
+  amp_peak_high:  6.0,  // force delta above avg (heuristic)
+  amp_spike_bad:  10.0,
+  radial_watch:   0.70, // MOA (single-shot radial)
+  radial_problem: 0.90,
+  radial_bad:     1.20,
+};
+
+function isFiniteNumber(x){
+  const n = Number(x);
+  return Number.isFinite(n) ? n : null;
+}
+
+function calcVelStats(shots){
+  const v = shots.map(s=>isFiniteNumber(s.velocity_fps)).filter(n=>n!==null);
+  if(!v.length) return {n:0, avg:null, sd:null, es:null, min:null, max:null};
+  const n=v.length;
+  const avg = v.reduce((a,b)=>a+b,0)/n;
+  const min=Math.min(...v), max=Math.max(...v);
+  const es = max-min;
+  const varp = v.reduce((a,b)=>a+Math.pow(b-avg,2),0)/(n>1? (n-1):1);
+  const sd = Math.sqrt(varp);
+  return {n, avg, sd, es, min, max};
+}
+
+function sparklineSVG(values){
+  const v = values.map(Number).filter(n=>Number.isFinite(n));
+  if(v.length<2) return "";
+  const w=96, h=22, pad=3;
+  const min=Math.min(...v), max=Math.max(...v);
+  const span = (max-min) || 1;
+  const pts = v.map((val,i)=>{
+    const x = pad + (i*(w-2*pad)/(v.length-1));
+    const y = pad + (h-2*pad) * (1 - (val-min)/span);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="velocity trend sparkline">
+    <polyline points="${pts}" fill="none" stroke="rgba(200,230,255,.9)" stroke-width="1.8" />
+  </svg>`;
+}
+
+function scoreShot(r, stringVelStats){
+  // returns {level:'good'|'watch'|'problem'|'bad', chips:[{t,cls}]}
+  const chips=[];
+  const radial = isFiniteNumber(r.impact_radial_moa);
+  const ampAvg = isFiniteNumber(r.amp_avg_force);
+  const ampPk  = isFiniteNumber(r.amp_peak_force);
+  const vel    = isFiniteNumber(r.velocity_fps);
+
+  // radial based
+  if(radial!==null){
+    if(radial>=DEFAULT_THRESH_SCORE.radial_bad) chips.push({t:`RAD ${radial.toFixed(2)}`, cls:"red"});
+    else if(radial>=DEFAULT_THRESH_SCORE.radial_problem) chips.push({t:`RAD ${radial.toFixed(2)}`, cls:"amber"});
+    else if(radial>=DEFAULT_THRESH_SCORE.radial_watch) chips.push({t:`RAD ${radial.toFixed(2)}`, cls:"dim"});
+  }
+
+  // amp spike heuristic
+  if(ampAvg!==null && ampPk!==null){
+    const d = ampPk-ampAvg;
+    if(d>=DEFAULT_THRESH_SCORE.amp_spike_bad) chips.push({t:`AMP spike +${d.toFixed(1)}`, cls:"red"});
+    else if(d>=DEFAULT_THRESH_SCORE.amp_peak_high) chips.push({t:`AMP spike +${d.toFixed(1)}`, cls:"amber"});
+  }
+
+  // velocity outlier (z-score-ish)
+  if(vel!==null && stringVelStats && stringVelStats.n>=8 && stringVelStats.sd){
+    const z = Math.abs((vel-stringVelStats.avg)/stringVelStats.sd);
+    if(z>=3.0) chips.push({t:`VEL outlier z=${z.toFixed(1)}`, cls:"red"});
+    else if(z>=2.0) chips.push({t:`VEL outlier z=${z.toFixed(1)}`, cls:"amber"});
+  }
+
+  // classify
+  const hasRed = chips.some(c=>c.cls==="red");
+  const hasAmber = chips.some(c=>c.cls==="amber");
+  let level = "good";
+  if(hasRed) level="bad";
+  else if(hasAmber) level="problem";
+  else if(chips.length) level="watch";
+
+  return {level, chips};
+}
+
+function stringSummary(sm){
+  const all = state.shots.filter(s=>s.string_id===sm.id && !s.exclude);
+  const sighters = all.filter(s=>s.is_sighter);
+  const records  = all.filter(s=>!s.is_sighter);
+  const velStats = calcVelStats(records);
+  const velList = records.map(s=>isFiniteNumber(s.velocity_fps)).filter(n=>n!==null);
+  return {
+    allCount: all.length,
+    sighterCount: sighters.length,
+    recordCount: records.length,
+    velStats,
+    spark: velList.length>=2 ? sparklineSVG(velList) : ""
+  };
+}
+
+/* ------------------------- File helpers ------------------------- */
+function readFileAsText(file){
+  return new Promise((resolve,reject)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>resolve(String(fr.result||""));
+    fr.onerror = ()=>reject(fr.error || new Error("File read error"));
+    fr.readAsText(file);
+  });
+}
+function readFileAsArrayBuffer(file){
+  return new Promise((resolve,reject)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>resolve(fr.result);
+    fr.onerror = ()=>reject(fr.error || new Error("File read error"));
+    fr.readAsArrayBuffer(file);
+  });
+}
+
+/* ------------------------- CSV/TSV parsing ------------------------- */
+function detectDelimiter(text){
+  const lines = (text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(l=>l.trim().length>0);
+  if(!lines.length) return ",";
+  const line = lines[0];
+  const tabCount = (line.match(/\t/g)||[]).length;
+  const commaCount = (line.match(/,/g)||[]).length;
+  return (tabCount > commaCount) ? "\t" : ",";
+}
+function splitDelimitedLine(line, delim){
+  const out = [];
+  let cur = "";
+  let inQ = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch === '"'){
+      if(inQ && line[i+1] === '"'){ cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if(ch === delim && !inQ){
+      out.push(cur); cur = "";
+    } else cur += ch;
+  }
+  out.push(cur);
+  return out.map(s=>s.trim());
+}
+function parseDelimited(text){
+  const clean = (text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+  const delim = detectDelimiter(clean);
+  const lines = clean.split("\n").filter(l=>l.trim().length>0);
+  if(!lines.length) return {headers:[], rows:[], delim};
+  const headers = splitDelimitedLine(lines[0], delim).map(h=>h.replace(/^\uFEFF/,'').trim());
+  const rows = [];
+  for(let i=1;i<lines.length;i++){
+    const cells = splitDelimitedLine(lines[i], delim);
+    const row = {};
+    headers.forEach((h,idx)=> row[h] = (cells[idx]!==undefined ? cells[idx] : "") );
+    rows.push(row);
+  }
+  return {headers, rows, delim};
+}
+
+/* ------------------------- Minimal XLS (BIFF8) parser ------------------------- */
+/* Purpose-built Excel 97-2003 .xls reader to extract Garmin chrono tables. */
+function u8(arr){ return new Uint8Array(arr); }
+function u16(dv, o){ return dv.getUint16(o, true); }
+function u32(dv, o){ return dv.getUint32(o, true); }
+function f64(dv, o){ return dv.getFloat64(o, true); }
+
+function parseOLE(buffer){
+  const bytes = u8(buffer);
+  const dv = new DataView(buffer);
+  const sig = Array.from(bytes.slice(0,8)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(sig !== "d0cf11e0a1b11ae1") throw new Error("Not an OLE .xls file");
+
+  const sectorShift = u16(dv, 0x1E);
+  const sectorSize = 1 << sectorShift;
+
+  const numFATSectors = u32(dv, 0x2C);
+  const dirStart = u32(dv, 0x30);
+  const miniStreamCutoff = u32(dv, 0x38);
+  const miniFATStart = u32(dv, 0x3C);
+  const numMiniFATSectors = u32(dv, 0x40);
+  const difatStart = u32(dv, 0x44);
+  const numDIFATSectors = u32(dv, 0x48);
+
+  function sectorOffset(sid){ return (sid + 1) * sectorSize; }
+
+  const difat = [];
+  for(let i=0;i<109;i++){
+    const val = u32(dv, 0x4C + i*4);
+    if(val !== 0xFFFFFFFF) difat.push(val);
+  }
+  let nextDIFAT = difatStart;
+  for(let n=0; n<numDIFATSectors && nextDIFAT !== 0xFFFFFFFF; n++){
+    const off = sectorOffset(nextDIFAT);
+    for(let i=0;i<(sectorSize/4)-1;i++){
+      const val = u32(dv, off + i*4);
+      if(val !== 0xFFFFFFFF) difat.push(val);
+    }
+    nextDIFAT = u32(dv, off + sectorSize - 4);
+  }
+
+  const FAT = [];
+  difat.slice(0, numFATSectors).forEach(fs=>{
+    const off = sectorOffset(fs);
+    for(let i=0;i<sectorSize/4;i++) FAT.push(u32(dv, off + i*4));
+  });
+
+  function readStream(startSid){
+    const chunks = [];
+    let sid = startSid;
+    const seen = new Set();
+    // Treat both ENDOFCHAIN (0xFFFFFFFE) and NOSTREAM (0xFFFFFFFF) as termination.
+    while(sid !== 0xFFFFFFFF && sid !== 0xFFFFFFFE){
+      if(seen.has(sid)) throw new Error("OLE FAT cycle");
+      seen.add(sid);
+      const off = sectorOffset(sid);
+      chunks.push(bytes.slice(off, off + sectorSize));
+      sid = FAT[sid];
+      if(sid === undefined) throw new Error("OLE FAT out of range");
+    }
+    let total = 0; chunks.forEach(c=> total += c.length);
+    const out = new Uint8Array(total);
+    let p=0; chunks.forEach(c=>{ out.set(c,p); p+=c.length; });
+    return out;
+  }
+
+  const dirBytes = readStream(dirStart);
+  const dirDV = new DataView(dirBytes.buffer, dirBytes.byteOffset, dirBytes.byteLength);
+
+  let miniFAT = null;
+  if(miniFATStart !== 0xFFFFFFFF && numMiniFATSectors > 0){
+    const miniFatBytes = readStream(miniFATStart);
+    const mdv = new DataView(miniFatBytes.buffer, miniFatBytes.byteOffset, miniFatBytes.byteLength);
+    miniFAT = [];
+    for(let i=0;i<miniFatBytes.byteLength/4;i++) miniFAT.push(mdv.getUint32(i*4, true));
+  }
+
+  const entries = [];
+  for(let off=0; off+128<=dirBytes.byteLength; off+=128){
+    const nameLen = dirDV.getUint16(off + 64, true);
+    if(nameLen < 2) continue;
+    let name = "";
+    for(let i=0; i<nameLen-2; i+=2){
+      const c = dirDV.getUint16(off + i, true);
+      if(c===0) break;
+      name += String.fromCharCode(c);
+    }
+    const type = dirDV.getUint8(off + 66);
+    const startSid = dirDV.getUint32(off + 116, true);
+    const sizeLow = dirDV.getUint32(off + 120, true);
+    const sizeHigh = dirDV.getUint32(off + 124, true);
+    const size = sizeLow + sizeHigh * 0x100000000;
+    entries.push({name, type, startSid, size});
+  }
+
+  const root = entries.find(e=>e.type===5);
+  let miniStream = null;
+  if(root && root.startSid !== 0xFFFFFFFF && root.startSid !== 0xFFFFFFFE) miniStream = readStream(root.startSid);
+
+  function readMiniStream(startSid, size){
+    if(!miniFAT || !miniStream) throw new Error("MiniFAT not available");
+    const miniSectorSize = 64;
+    const out = new Uint8Array(size);
+    let sid = startSid, pos = 0;
+    const seen = new Set();
+    while(sid !== 0xFFFFFFFF && sid !== 0xFFFFFFFE && pos < size){
+      if(seen.has(sid)) throw new Error("MiniFAT cycle");
+      seen.add(sid);
+      const off = sid * miniSectorSize;
+      const take = Math.min(miniSectorSize, size - pos);
+      out.set(miniStream.slice(off, off + take), pos);
+      pos += take;
+      sid = miniFAT[sid];
+      if(sid === undefined) throw new Error("MiniFAT out of range");
+    }
+    return out;
+  }
+
+  function getStreamByName(names){
+    for(const nm of names){
+      const ent = entries.find(e=>e.name === nm);
+      if(ent){
+        if(ent.size < miniStreamCutoff && ent.startSid !== 0xFFFFFFFF && ent.startSid !== 0xFFFFFFFE && miniFAT && miniStream) return readMiniStream(ent.startSid, ent.size);
+        if(ent.startSid !== 0xFFFFFFFF && ent.startSid !== 0xFFFFFFFE){
+          const raw = readStream(ent.startSid);
+          return raw.slice(0, ent.size);
+        }
+      }
+    }
+    return null;
+  }
+
+  const wb = getStreamByName(["Workbook","Book"]);
+  if(!wb) throw new Error("Workbook stream not found in .xls");
+  return wb;
+}
+
+function readXLUnicodeString(dv, o){
+  const cch = dv.getUint16(o, true); o += 2;
+  const flags = dv.getUint8(o); o += 1;
+  const fHighByte = flags & 0x01;
+  const fExtSt = flags & 0x04;
+  const fRichSt = flags & 0x08;
+  let cRun = 0, cbExtRst = 0;
+  if(fRichSt){ cRun = dv.getUint16(o, true); o += 2; }
+  if(fExtSt){ cbExtRst = dv.getUint32(o, true); o += 4; }
+
+  let chars = [];
+  if(fHighByte){
+    for(let i=0;i<cch;i++) chars.push(String.fromCharCode(dv.getUint16(o + i*2, true)));
+    o += cch*2;
+  } else {
+    for(let i=0;i<cch;i++) chars.push(String.fromCharCode(dv.getUint8(o + i)));
+    o += cch;
+  }
+  if(fRichSt) o += cRun * 4;
+  if(fExtSt) o += cbExtRst;
+  return {str: chars.join(""), next: o};
+}
+
+function parseRK(rk){
+  const fX100 = rk & 0x01;
+  const fInt = rk & 0x02;
+  let val;
+  if(fInt){
+    val = (rk >> 2);
+  } else {
+    const raw = (rk & 0xFFFFFFFC) >>> 0;
+    const buf = new ArrayBuffer(8);
+    const dv = new DataView(buf);
+    dv.setUint32(0, 0, true);
+    dv.setUint32(4, raw, true);
+    val = dv.getFloat64(0, true);
+  }
+  if(fX100) val = val / 100;
+  return val;
+}
+
+function parseBIFF8Workbook(wbBytes){
+  const dv = new DataView(wbBytes.buffer, wbBytes.byteOffset, wbBytes.byteLength);
+
+  // Global pass: find sheets and SST
+  let sheets = [];
+  let sst = [];
+  let sstPending = null;
+
+  function readSST(at, len){
+    const end = at + len;
+    if(!sstPending){
+      const total = dv.getUint32(at, true); at += 4;
+      const unique = dv.getUint32(at, true); at += 4;
+      sstPending = {total, unique, strings:[], at, end};
+    } else {
+      sstPending.at = at;
+      sstPending.end = end;
+    }
+    while(sstPending.strings.length < sstPending.unique && sstPending.at < sstPending.end){
+      try{
+        const res = readXLUnicodeString(dv, sstPending.at);
+        sstPending.strings.push(res.str);
+        sstPending.at = res.next;
+      } catch(e){
+        break;
+      }
+    }
+    if(sstPending.strings.length >= sstPending.unique){
+      sst = sstPending.strings;
+      sstPending = null;
+    }
+  }
+
+  let pos = 0;
+  while(pos + 4 <= dv.byteLength){
+    const rt = dv.getUint16(pos, true);
+    const rl = dv.getUint16(pos+2, true);
+    const dataOff = pos + 4;
+
+    if(rt === 0x0085){ // BOUNDSHEET8
+      const bofPos = dv.getUint32(dataOff, true);
+      const cch = dv.getUint8(dataOff + 6);
+      const flags = dv.getUint8(dataOff + 7);
+      let name = "";
+      if(flags & 0x01){
+        for(let i=0;i<cch;i++) name += String.fromCharCode(dv.getUint16(dataOff + 8 + i*2, true));
+      } else {
+        for(let i=0;i<cch;i++) name += String.fromCharCode(dv.getUint8(dataOff + 8 + i));
+      }
+      sheets.push({name, bofPos});
+    } else if(rt === 0x00FC){ // SST
+      readSST(dataOff, rl);
+    } else if(rt === 0x003C && sstPending){ // CONTINUE
+      readSST(dataOff, rl);
+    }
+
+    pos = dataOff + rl;
+  }
+
+  if(!sheets.length) throw new Error("No sheets found in XLS");
+  // Parse each sheet into a grid; pick the one with Garmin-ish headers.
+  function parseSheetAt(bofPos){
+    const cells = new Map();
+    let maxR = 0, maxC = 0;
+    let p = bofPos;
+    while(p + 4 <= dv.byteLength){
+      const rt = dv.getUint16(p, true);
+      const rl = dv.getUint16(p+2, true);
+      const dataOff = p + 4;
+      if(rt === 0x000A) break; // EOF
+
+      if(rt === 0x00FD){ // LABELSST
+        const r = dv.getUint16(dataOff, true);
+        const c = dv.getUint16(dataOff+2, true);
+        const sstIdx = dv.getUint32(dataOff+6, true);
+        const v = sst[sstIdx] ?? "";
+        cells.set(r + "," + c, v);
+        maxR = Math.max(maxR, r); maxC = Math.max(maxC, c);
+      } else if(rt === 0x0203){ // NUMBER
+        const r = dv.getUint16(dataOff, true);
+        const c = dv.getUint16(dataOff+2, true);
+        const v = f64(dv, dataOff+6);
+        cells.set(r + "," + c, v);
+        maxR = Math.max(maxR, r); maxC = Math.max(maxC, c);
+      } else if(rt === 0x027E){ // RK
+        const r = dv.getUint16(dataOff, true);
+        const c = dv.getUint16(dataOff+2, true);
+        const rk = dv.getUint32(dataOff+6, true);
+        const v = parseRK(rk);
+        cells.set(r + "," + c, v);
+        maxR = Math.max(maxR, r); maxC = Math.max(maxC, c);
+      } else if(rt === 0x00BD){ // MULRK
+        const r = dv.getUint16(dataOff, true);
+        let c1 = dv.getUint16(dataOff+2, true);
+        const c2 = dv.getUint16(dataOff + rl - 2, true);
+        let off = dataOff + 4;
+        for(let c=c1; c<=c2; c++){
+          const rk = dv.getUint32(off + 2, true);
+          const v = parseRK(rk);
+          cells.set(r + "," + c, v);
+          maxR = Math.max(maxR, r); maxC = Math.max(maxC, c);
+          off += 6;
+        }
+      } else if(rt === 0x0204){ // LABEL
+        const r = dv.getUint16(dataOff, true);
+        const c = dv.getUint16(dataOff+2, true);
+        const len = dv.getUint16(dataOff+6, true);
+        let str = "";
+        for(let i=0;i<len;i++) str += String.fromCharCode(dv.getUint8(dataOff+8+i));
+        cells.set(r + "," + c, str);
+        maxR = Math.max(maxR, r); maxC = Math.max(maxC, c);
+      }
+      p = dataOff + rl;
+    }
+    const grid = [];
+    for(let r=0; r<=maxR; r++){
+      const row = [];
+      let hasAny=false;
+      for(let c=0;c<=maxC;c++){
+        const v = cells.get(r + "," + c);
+        const val = (v===undefined ? "" : v);
+        if(String(val).trim()!=="") hasAny=true;
+        row.push(val);
+      }
+      if(hasAny) grid.push(row);
+    }
+    return grid;
+  }
+
+  const grids = sheets.map(sh=>({name:sh.name, grid: parseSheetAt(sh.bofPos)}));
+  const scoreGrid = (grid)=>{
+    const norm = (x)=>String(x||"").toLowerCase();
+    let best = 0;
+    for(let i=0;i<Math.min(grid.length, 30); i++){
+      const row = grid[i].map(norm).join(" ");
+      let s = 0;
+      if(row.includes("fps") || row.includes("speed") || row.includes("velocity")) s += 3;
+      if(row.includes("time")) s += 2;
+      if(row.includes("shot")) s += 1;
+      best = Math.max(best, s);
+    }
+    return best;
+  };
+  grids.sort((a,b)=>scoreGrid(b.grid)-scoreGrid(a.grid));
+  return grids[0].grid;
+}
+
+async function parseXLSFileToObjects(file){
+  const ab = await readFileAsArrayBuffer(file);
+  const wbStream = parseOLE(ab);
+  const grid = parseBIFF8Workbook(wbStream);
+  const norm = (x)=>String(x??"").trim();
+
+  let headerRowIdx = -1;
+  for(let i=0;i<Math.min(grid.length, 40); i++){
+    const row = grid[i].map(norm);
+    const joined = row.join(" ").toLowerCase();
+    if(joined.includes("fps") || joined.includes("speed") || joined.includes("velocity")){
+      headerRowIdx = i;
+      break;
+    }
+  }
+  if(headerRowIdx < 0) headerRowIdx = 0;
+
+  const headers = grid[headerRowIdx].map(norm).filter(h=>h!=="");
+  const rows = [];
+  for(let i=headerRowIdx+1; i<grid.length; i++){
+    const r = grid[i];
+    const allEmpty = r.every(v=>norm(v)==="");
+    if(allEmpty) continue;
+    const obj = {};
+    for(let c=0;c<headers.length;c++){
+      obj[headers[c]] = norm(r[c]);
+    }
+    // if row still empty, skip
+    if(Object.values(obj).every(v=>String(v||"").trim()==="")) continue;
+    rows.push(obj);
+  }
+  return {headers, rows};
+}
+
+/* ------------------------- Importers ------------------------- */
+function ensureChronoSource(name, headers, rows){
+  const existing = state.chronoSources.find(x=>x.name===name);
+  if(existing){
+    existing.headers = headers; existing.rows = rows; existing.count = rows.length;
+  } else {
+    state.chronoSources.push({name, headers, rows, count: rows.length});
+  }
+}
+
+function importGarminRowsFromObjects(sourceName, headers, rows){
+  ensureChronoSource(sourceName, headers, rows);
+  setStatus(`Loaded Garmin: ${sourceName}\nRows: ${rows.length}\nHeaders: ${headers.join(" | ")}`);
+  toast("Garmin loaded", `${sourceName} (${rows.length})`);
+  renderPairingPanel();
+  render();
+}
+
+async function importGarminFile(file){
+  const name = file.name || "garmin";
+  const ext = name.toLowerCase().split(".").pop();
+  if(ext === "xls"){
+    const parsed = await parseXLSFileToObjects(file);
+    return importGarminRowsFromObjects(name, parsed.headers, parsed.rows);
+  }
+  if(ext === "xlsx"){
+    toast("Garmin .xlsx", "This v0 build supports .csv and binary .xls. Export Garmin as CSV for .xlsx.");
+    return;
+  }
+  const text = await readFileAsText(file);
+  // Garmin CSV sometimes has a title row above headers; find header row that contains FPS/speed
+  const lines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(l=>l.trim().length>0);
+  let headerIdx = 0;
+  for(let i=0;i<Math.min(lines.length, 30); i++){
+    const l = lines[i].toLowerCase();
+    if(l.includes("fps") || l.includes("speed") || l.includes("velocity")){
+      headerIdx = i; break;
+    }
+  }
+  const sliced = lines.slice(headerIdx).join("\n");
+  const parsed = parseDelimited(sliced);
+  return importGarminRowsFromObjects(name, parsed.headers, parsed.rows);
+}
+
+
+async function importAMPCSV(file){
+  const text = await readFileAsText(file);
+  const parsed = parseDelimited(text);
+  const headers = parsed.headers;
+  const rows = parsed.rows;
+
+  // Two common AMP export shapes:
+  // A) "Matrix" form: first column is row label (Flyer, Peak Force, Terminal Force, etc),
+  //    trace columns are "Trace 1".."Trace N"
+  // B) "Wide" form: headers contain "Trace 1 Peak Force", etc
+  const firstCol = headers[0];
+  const labelColLooksLikeMatrix = rows.some(r=>{
+    const v = String(r[firstCol]||"").toLowerCase();
+    return v.includes("peak force") || v.includes("terminal force") || v==="flyer";
+  });
+
+  const traces = [];
+  if(labelColLooksLikeMatrix){
+    const byLabel = {};
+    for(const r of rows){
+      const label = String(r[firstCol]||"").trim();
+      if(!label) continue;
+      byLabel[label.toLowerCase()] = r;
+    }
+    const rowFlyer = byLabel["flyer"] || null;
+    const rowPeak  = byLabel["peak force"] || null;
+    const rowTerm  = byLabel["terminal force"] || null;
+
+    const traceCols = headers.filter(h=>/^trace\s*\d+$/i.test(String(h||"").trim()));
+    traceCols.sort((a,b)=>{
+      const na = Number(String(a).match(/\d+/)?.[0]||0);
+      const nb = Number(String(b).match(/\d+/)?.[0]||0);
+      return na-nb;
+    });
+
+    for(const col of traceCols){
+      const n = Number(String(col).match(/\d+/)?.[0]||0);
+      const peak = rowPeak ? Number(String(rowPeak[col]||"").replace(/[^\d.\-]/g,"")) : "";
+      const term = rowTerm ? Number(String(rowTerm[col]||"").replace(/[^\d.\-]/g,"")) : "";
+      const flyerRaw = rowFlyer ? String(rowFlyer[col]||"").trim().toLowerCase() : "";
+      const flyer = (flyerRaw==="true" || flyerRaw==="1" || flyerRaw==="yes" || flyerRaw==="y" || flyerRaw==="t");
+      traces.push({
+        idx:n,
+        peak: isFinite(peak)?peak:"",
+        terminal: isFinite(term)?term:"",
+        flyer,
+        excluded: flyer
+      });
+    }
+  } else {
+    // Fallback: Wide form (best-effort)
+    const traceNums = new Set();
+    for(const h of headers){
+      const m = String(h).match(/trace\s+(\d+)/i);
+      if(m) traceNums.add(Number(m[1]));
+    }
+    const pickCol = (n, key)=>{
+      const lowKey = key.toLowerCase();
+      for(const h of headers){
+        const l = h.toLowerCase();
+        if(l.includes("trace "+n) && l.includes(lowKey)) return h;
+      }
+      return null;
+    };
+    const row0 = rows[0] || {};
+    Array.from(traceNums).sort((a,b)=>a-b).forEach(n=>{
+      const colPeak = pickCol(n, "peak force");
+      const colTerm = pickCol(n, "terminal force");
+      const colFly  = pickCol(n, "flyer");
+      const peak = colPeak ? Number(row0[colPeak]||"") : "";
+      const term = colTerm ? Number(row0[colTerm]||"") : "";
+      const flyerRaw = colFly ? String(row0[colFly]||"").toLowerCase() : "";
+      const flyer = (flyerRaw==="true" || flyerRaw==="1" || flyerRaw==="yes");
+      traces.push({idx:n, peak: isFinite(peak)?peak:"", terminal: isFinite(term)?term:"", flyer, excluded: flyer});
+    });
+  }
+
+  state.amp = { traces, meta:{file:file.name, n:traces.length} };
+  toast("AMP loaded", `${file.name} (${traces.length} traces)`);
+  render();
+}
+
+
+
+function mmToMOA(mm, distYd){
+  const m = Number(mm);
+  const d = Number(distYd);
+  if(!isFinite(m) || !isFinite(d) || d<=0) return "";
+  const inches = m / 25.4;
+  const moa = inches / (1.047 * (d/100));
+  return moa;
+}
+
+// ShotMarker "Archived Data" style: multiple blocks with a header line containing Date/Relay etc.
+// We'll parse blocks separated by lines that start with "Date:"
+async function importShotMarkerCSV(file){
+  const text = await readFileAsText(file);
+  const lines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
+
+  // ShotMarker archive format: header lines, then repeating blocks:
+  // "Sep 25 2025,R3,#227 (HWW),1115 x 1115,NRA Long Range FC at 1000y,219-12X"
+  // followed by a CSV header row like ",time,tags,id,score,..." and shot rows.
+  const isBlockHeader = (l)=>/^[A-Z][a-z]{2}\s+\d{1,2}\s+\d{4},/.test((l||"").trim());
+  const blocks = [];
+  let cur = null;
+
+  for(const line of lines){
+    if(isBlockHeader(line)){
+      if(cur && cur.lines.length) blocks.push(cur);
+      cur = { header: (line||"").trim(), lines: [] };
+      continue;
+    }
+    if(cur) cur.lines.push(line);
+  }
+  if(cur && cur.lines.length) blocks.push(cur);
+
+  if(!blocks.length){
+    toast("ShotMarker import", "No archive blocks found. File format may be different than expected.");
+    setStatus("ShotMarker parse: 0 blocks found.\nExpected lines starting like: \"Sep 25 2025,R3,...\"");
+    return;
+  }
+
+  const smStrings = [];
+  const sessionBase = file.name.replace(/\.[^.]+$/,"");
+  let stringCounter = 0;
+
+  for(const b of blocks){
+    const nonEmpty = b.lines.filter(l=>String(l||"").trim().length>0);
+    let headerLineIdx = -1;
+    for(let i=0;i<Math.min(nonEmpty.length, 30); i++){
+      const l = nonEmpty[i].toLowerCase();
+      if(l.includes(",time") && l.includes("x") && l.includes("y")) { headerLineIdx = i; break; }
+    }
+    if(headerLineIdx < 0) continue;
+
+    const csvText = nonEmpty.slice(headerLineIdx).join("\n");
+    const parsed = parseDelimited(csvText);
+    const headersLower = parsed.headers.map(h=>String(h||"").toLowerCase());
+
+    const pick = (...names)=>{
+      for(const n of names){
+        const idx = headersLower.indexOf(String(n).toLowerCase());
+        if(idx>=0) return parsed.headers[idx];
+      }
+      for(const n of names){
+        const nn = String(n).toLowerCase();
+        const idx = headersLower.findIndex(h=>h.includes(nn));
+        if(idx>=0) return parsed.headers[idx];
+      }
+      return null;
+    };
+
+    const colId   = pick("id");
+    const colTags = pick("tags");
+    const colXmm  = pick("x mm","x (mm)","x");
+    const colYmm  = pick("y mm","y (mm)","y");
+    const colScore= pick("score");
+    const colTime = pick("time");
+
+    let distYd = "";
+    const dm = b.header.match(/(\d{3,4})\s*y/i) || b.header.match(/(\d{3,4})\s*yd/i);
+    if(dm) distYd = Number(dm[1]);
+
+    const parts = b.header.split(",");
+    const datePart = parts[0] ? parts[0].trim() : "";
+    const relayPart = parts[1] ? parts[1].trim() : "";
+    const targetPart = parts[2] ? parts[2].trim() : "";
+    const sessionLabel = [datePart, relayPart, targetPart].filter(Boolean).join(" ");
+
+    stringCounter++;
+    const stringId = "SM_String_" + String(stringCounter).padStart(2,"0");
+    const session_id = sessionBase;
+
+    const shots = [];
+    for(const r of parsed.rows){
+      if(colId){
+        const rawId = String(r[colId]||"").trim();
+        if(!rawId || !/^\d+$/.test(rawId)) continue; // skip blank/summary rows
+      }
+      const inString = colId ? Number(r[colId]||"") : (shots.length+1);
+      const tags = colTags ? String(r[colTags]||"").trim().toLowerCase() : "";
+      const isSighter = tags.includes("sighter");
+
+      const x = colXmm ? Number(String(r[colXmm]||"").replace(",",".")) : NaN;
+      const y = colYmm ? Number(String(r[colYmm]||"").replace(",",".")) : NaN;
+
+      const hmoa = (isFinite(x) && distYd) ? Number(mmToMOA(x, distYd)) : "";
+      const vmoa = (isFinite(y) && distYd) ? Number(mmToMOA(y, distYd)) : "";
+      const rmoa = (isFinite(hmoa) && isFinite(vmoa)) ? Math.sqrt(hmoa*hmoa + vmoa*vmoa) : "";
+
+      shots.push({
+        id: `${stringId}:${inString}`,
+        shot_index: 0,
+        timestamp_local: colTime ? String(r[colTime]||"") : "",
+        distance_yd: distYd || "",
+        session_id,
+        string_id: stringId,
+        shot_index_in_string: isFinite(inString)?inString:(shots.length+1),
+        impact_vert_moa: vmoa,
+        impact_horiz_moa: hmoa,
+        impact_radial_moa: rmoa,
+        shotmarker_target_id: sessionLabel || stringId,
+        shotmarker_bull_id: "",
+        score_value: colScore ? String(r[colScore]||"") : "",
+        velocity_fps: "",
+        chrono_shot_index: "",
+        chrono_source_id: "",
+        amp_avg_force: "",
+        amp_peak_force: "",
+        amp_event_index: "",
+        amp_program: "",
+        primer_seat_in: "",
+        wind_zero_delta_moa: "",
+        elev_zero_delta_moa: "",
+        wind_call: "",
+        is_sighter: isSighter,
+        join_confidence: "sm-only",
+        exclude: false,
+        notes: ""
+      });
+    }
+
+    smStrings.push({ id: stringId, session_id, string_label: sessionLabel, distance_yd: distYd || "", shots });
+  }
+
+  if(!smStrings.length){
+    toast("ShotMarker import", "Archive blocks found, but no shot tables parsed.");
+    setStatus("ShotMarker parse: blocks found, but could not locate header row \",time,...,x mm,y mm,...\".");
+    return;
+  }
+
+  state.smStrings = smStrings;
+  state.shots = smStrings.flatMap(s=>s.shots);
+  state._collapseSeeded = false;
+  state.collapsedStrings = new Set();
+
+  let idx = 1;
+  for(const sh of state.shots) sh.shot_index = idx++;
+
+  refreshStringSelect();
+  toast("ShotMarker loaded", `${file.name} (${state.shots.length} shots across ${smStrings.length} strings)`);
+  renderPairingPanel();
+  render();
+}
+
+
+
+
+
+
+function applyPairings(){
+  state.pairings = state.pairings || {};
+  state.chronoSources = state.chronoSources || [];
+  state.amp = state.amp || {traces:[], meta:{}};
+
+  // Reset join fields
+  for(const sh of state.shots){
+    sh.velocity_fps = "";
+    sh.chrono_shot_index = "";
+    sh.chrono_source_id = "";
+    sh.amp_avg_force = "";
+    sh.amp_peak_force = "";
+    sh.amp_event_index = "";
+    sh.amp_program = "";
+    if(sh.join_confidence && sh.join_confidence!=="sm-only") sh.join_confidence = "sm-only";
+  }
+
+  for(const sm of state.smStrings){
+    sm._join = sm._join || {velAssigned:0, velTotal:0, ampAssigned:0, ampTotal:0};
+    sm._join.velAssigned = 0; sm._join.velTotal = 0;
+    sm._join.ampAssigned = 0; sm._join.ampTotal = 0;
+  }
+
+  // Garmin join (shot order inside string; include sighters; skip only excluded)
+  for(const sm of state.smStrings){
+    const srcName = (state.pairings||{})[sm.id];
+    if(!srcName) continue;
+    const src = (state.chronoSources||[]).find(s=>s.name===srcName);
+    if(!src) continue;
+
+    const headersLower = src.headers.map(h=>String(h||"").toLowerCase());
+    const pick = (...names)=>{
+      for(const n of names){
+        const idx = headersLower.indexOf(String(n).toLowerCase());
+        if(idx>=0) return src.headers[idx];
+      }
+      for(const n of names){
+        const nn = String(n).toLowerCase();
+        const idx = headersLower.findIndex(h=>h.includes(nn));
+        if(idx>=0) return src.headers[idx];
+      }
+      return null;
+    };
+    const colVel = pick("speed (fps)","speed","v","fps");
+    const colNo  = pick("#","shot #","shot#","shot number","no");
+
+    // Keep only actual shot rows from Garmin (velocity must be numeric)
+    const garminShotRows = src.rows.filter(r=>{
+      const v = colVel ? Number(String(r[colVel]||"").replace(/[^\d.\-]/g,"")) : NaN;
+      return isFinite(v);
+    });
+
+    const velList = garminShotRows.map(r=> Number(String(r[colVel]||"").replace(/[^\d.\-]/g,"")) );
+    const noList  = garminShotRows.map((r,i)=> {
+      const n = colNo ? Number(String(r[colNo]||"").replace(/[^\d]/g,"")) : (i+1);
+      return isFinite(n)?n:(i+1);
+    });
+
+    const smShots = state.shots
+      .filter(sh=>sh.string_id===sm.id && !sh.exclude)
+      .sort((a,b)=>a.shot_index_in_string-b.shot_index_in_string);
+
+    sm._join.velTotal = smShots.length;
+
+    for(let i=0;i<smShots.length;i++){
+      const v = velList[i];
+      if(isFinite(v)){
+        smShots[i].velocity_fps = v;
+        smShots[i].chrono_source_id = src.name;
+        smShots[i].chrono_shot_index = noList[i];
+        smShots[i].join_confidence = "order";
+        sm._join.velAssigned++;
+      } else {
+        smShots[i].join_confidence = "order-missing";
+      }
+    }
+  }
+
+  // AMP join (global firing order across strings; include sighters; skip only excluded)
+  const traces = (state.amp?.traces || []).slice().sort((a,b)=>(a.idx||0)-(b.idx||0));
+  const orderedShots = [];
+  for(const sm of state.smStrings){
+    const ss = state.shots
+      .filter(sh=>sh.string_id===sm.id && !sh.exclude)
+      .sort((a,b)=>a.shot_index_in_string-b.shot_index_in_string);
+    orderedShots.push(...ss);
+    sm._join.ampTotal = ss.length;
+  }
+
+  for(let i=0;i<orderedShots.length;i++){
+    const sh = orderedShots[i];
+    const tr = traces[i];
+    if(!tr) break;
+    sh.amp_event_index = tr.idx;
+    sh.amp_peak_force = tr.peak;
+    sh.amp_avg_force  = tr.terminal;
+    sh.amp_program = state.amp?.meta?.file ? state.amp.meta.file : "";
+  }
+
+  for(const sm of state.smStrings){
+    const ss = state.shots.filter(sh=>sh.string_id===sm.id && !sh.exclude);
+    sm._join.ampAssigned = ss.filter(sh=>sh.amp_event_index!=="" && sh.amp_event_index!==undefined).length;
+  }
+}
+
+function renderPairingPanel(byString){
+  if(!byString){ byString = computePerStringStats().byString; }
+
+  state.pairings = state.pairings || {};
+
+  const host = $("pairing");
+  host.innerHTML = "";
+  const wrap = document.createElement("div");
+  wrap.className = "controls";
+  wrap.style.flexDirection = "column";
+  wrap.style.alignItems = "stretch";
+  wrap.style.gap = "8px";
+
+  if(!state.smStrings.length){
+    host.innerHTML = `<div class="small">Load ShotMarker first to generate strings.</div>`;
+    return;
+  }
+  const sources = state.chronoSources;
+
+  state.smStrings.forEach(sm=>{
+    const row = document.createElement("div");
+    row.className = "controls";
+    row.style.justifyContent="space-between";
+
+    const left = document.createElement("div");
+    const st = (byString && byString.get(sm.id)) ? byString.get(sm.id) : null;
+    const totalShots = st ? (st.record + st.sighters) : (sm.shots? sm.shots.length : 0);
+    const recShots = st ? st.record : totalShots;
+    const sighters = st ? st.sighters : 0;
+    const meta = st ? stringMiniSummary(st) : "";
+    const dist = sm.distance_yd ? ` · ${sm.distance_yd}yd` : "";
+    left.innerHTML = `<span class="pill">${escapeHtml(sm.id)}</span> <span class="small">${dist} ${meta}</span>`;
+    const sel = document.createElement("select");
+    sel.style.minWidth = "360px";
+    const opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = sources.length ? "Select chrono source…" : "No chrono sources loaded";
+    sel.appendChild(opt0);
+    sources.forEach(s=>{
+      const opt = document.createElement("option");
+      opt.value = s.name;
+      opt.textContent = `${s.name} (${s.count})`;
+      sel.appendChild(opt);
+    });
+    sel.value = state.pairings[sm.id] || "";
+    sel.addEventListener("change", ()=>{
+      state.pairings[sm.id] = sel.value;
+      applyPairings();
+      render();
+    });
+
+    row.appendChild(left);
+    row.appendChild(sel);
+    wrap.appendChild(row);
+  });
+
+  host.appendChild(wrap);
+}
+
+/* ------------------------- Table rendering ------------------------- */
+function render(){
+  // Apply pairings each render for now (safe idempotent)
+  applyPairings();
+
+  // header
+  const th = $("thead");
+  th.innerHTML = "";
+  SCHEMA.forEach(c=>{
+    const el = document.createElement("th");
+    el.textContent = c.label;
+    th.appendChild(el);
+  });
+  updateFloatingHeader();
+
+  // body
+  const tb = $("tbody");
+  tb.innerHTML = "";
+  const rows = state.shots;
+  for(const r of rows){
+    const tr = document.createElement("tr");
+    for(const c of SCHEMA){
+      const td = document.createElement("td");
+      const v = r[c.key];
+      if(c.key==="__flags"){ td.innerHTML = (v||""); }
+      else { td.textContent = fmtCell(c.key, v); }
+      tr.appendChild(td);
+    }
+    tb.appendChild(tr);
+  }
+
+  $("pillShots").textContent = `Shots: ${state.shots.length}`;
+  $("pillSM").textContent = `SM strings: ${state.smStrings.length}`;
+  $("pillChrono").textContent = `Chrono sources: ${state.chronoSources.length}`;
+  $("pillAMP").textContent = `AMP traces: ${(state.amp?.traces||[]).length}`;
+  updateFloatingHeader();
+  syncFloatingHeaderVisibility();
+}
+
+/* ------------------------- Sample + JSON export ------------------------- */
+function loadSample(){
+  state.smStrings = [
+    {id:"SM_String_01", session_id:"SampleSession", string_id:"SM_String_01", distance_yd:1000, shots:[]},
+    {id:"SM_String_02", session_id:"SampleSession", string_id:"SM_String_02", distance_yd:1000, shots:[]},
+    {id:"SM_String_03", session_id:"SampleSession", string_id:"SM_String_03", distance_yd:1000, shots:[]},
+  ];
+  state.shots = [];
+  let shotCounter = 1;
+  state.smStrings.forEach((s,si)=>{
+    for(let i=1;i<=22;i++){
+      const v = 2850 + (Math.random()*30-15);
+      s.shots.push({
+        shot_index: shotCounter++,
+        timestamp_local: `00:${String(i).padStart(2,'0')}.${Math.floor(Math.random()*9)}`,
+        distance_yd:1000,
+        session_id:"SampleSession",
+        string_id:s.id,
+        shot_index_in_string:i,
+        impact_vert_moa:(Math.random()*0.7-0.35).toFixed(2),
+        impact_horiz_moa:(Math.random()*0.7-0.35).toFixed(2),
+        impact_radial_moa:(Math.random()*0.6).toFixed(2),
+        shotmarker_target_id:s.id,
+        shotmarker_bull_id:"B"+(si+1),
+        score_value:"10",
+        velocity_fps:"",
+        chrono_shot_index:"",
+        chrono_source_id:"",
+        amp_avg_force:"",
+        amp_peak_force:"",
+        amp_event_index:"",
+        amp_program:"",
+        primer_seat_in:"",
+        wind_zero_delta_moa:"",
+        elev_zero_delta_moa:"",
+        wind_call:"",
+        is_sighter:false,
+        join_confidence:"sm-only",
+        exclude:false,
+        notes:""
+      });
+    }
+    state.shots.push(...s.shots);
+  });
+
+  state.chronoSources = [
+    {name:"Garmin_A.csv", headers:["Time","Speed (FPS)"], rows:Array.from({length:22},(_,i)=>({"Time":String(i+1), "Speed (FPS)":(2850+(Math.random()*20-10)).toFixed(0)})), count:22},
+    {name:"Garmin_B.csv", headers:["Time","Speed (FPS)"], rows:Array.from({length:22},(_,i)=>({"Time":String(i+1), "Speed (FPS)":(2855+(Math.random()*20-10)).toFixed(0)})), count:22},
+    {name:"Garmin_C.xls", headers:["Time","Speed (FPS)"], rows:Array.from({length:22},(_,i)=>({"Time":String(i+1), "Speed (FPS)":(2847+(Math.random()*20-10)).toFixed(0)})), count:22},
+  ];
+  state.amp = {traces:Array.from({length:66},(_,i)=>({idx:i+1, peak: (40+Math.random()*10).toFixed(1), terminal:(35+Math.random()*10).toFixed(1), flyer:false, excluded:false})), meta:{}};
+  state.pairings = {"SM_String_01":"Garmin_A.csv","SM_String_02":"Garmin_B.csv","SM_String_03":"Garmin_C.xls"};
+  state._collapseSeeded = false;
+  state.collapsedStrings = new Set();
+  toast("Loaded sample", "Try pairing dropdowns and verify the XLS shows as a source.");
+  renderPairingPanel();
+  render();
+}
+
+function exportJSON(){
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "shotledger_export.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function importJSON(file){
+  const text = await readFileAsText(file);
+  const obj = JSON.parse(text);
+  // shallow merge
+  state.shots = obj.shots || [];
+  state.smStrings = obj.smStrings || [];
+  state.chronoSources = obj.chronoSources || [];
+  state.amp = obj.amp || {traces:[], meta:{}};
+  state.pairings = obj.pairing || {};
+  // Reset default-collapse seeding so targets start rolled up after each load/import.
+  state._collapseSeeded = false;
+  state.collapsedStrings = new Set();
+  toast("JSON imported", file.name);
+  renderPairingPanel();
+  render();
+}
+
+/* ------------------------- Wire UI ------------------------- */
+
+function parseMaybeNumber(s){
+  if(s===undefined || s===null) return "";
+  const t = String(s).trim();
+  if(!t) return "";
+  const n = Number(t.replace(/[^\d.\-+]/g,""));
+  return isFinite(n) ? n : "";
+}
+function updateSelectionUI(){
+  const el = document.getElementById("selCount");
+  if(!el) return;
+  el.textContent = `Selected: ${state.selectedShotIds ? state.selectedShotIds.size : 0}`;
+}
+
+/* --------------------- Shot health + flags --------------------- */
+const DEFAULT_THRESH = {}; // thresholds/flags config
+Object.assign(DEFAULT_THRESH, {
+  // String-level (record shots only)
+  sd_ok: 10, sd_red: 14,
+  es_ok: 30, es_red: 40,
+
+  // Per-shot
+  radial_ok: 0.30,
+  radial_warn: 0.45,
+  radial_problem: 0.60, // >0.60 = red
+
+  vert_warn: 0.35,
+  vert_red: 0.50,
+
+  // Velocity dev from string avg (in SD units)
+  vdev_ok: 0.5,
+  vdev_warn: 1.0,
+  vdev_problem: 1.5, // >1.5 = red
+
+  // AMP robust outlier (median + MAD robust-z)
+  amp_warn_z: 2.5,
+  amp_red_z: 3.5,
+
+  // ES endpoint penalty
+  es_endpoint_penalty: 5,
+});
+
+function _num(x){ const n=Number(x); return Number.isFinite(n)?n:null; }
+function mean(arr){ const a=arr.filter(v=>Number.isFinite(v)); if(!a.length) return null; return a.reduce((s,v)=>s+v,0)/a.length; }
+function sd(arr){
+  const a=arr.filter(v=>Number.isFinite(v)); if(a.length<2) return null;
+  const m=mean(a); const v=a.reduce((s,x)=>s+(x-m)*(x-m),0)/(a.length-1);
+  return Math.sqrt(v);
+}
+function es(arr){
+  const a=arr.filter(v=>Number.isFinite(v)); if(a.length<2) return null;
+  let mn=a[0], mx=a[0]; for(const v of a){ if(v<mn) mn=v; if(v>mx) mx=v; }
+  return mx-mn;
+}
+function median(arr){
+  const a=arr.filter(v=>Number.isFinite(v)).slice().sort((x,y)=>x-y);
+  if(!a.length) return null;
+  const mid=Math.floor(a.length/2);
+  return a.length%2? a[mid] : (a[mid-1]+a[mid])/2;
+}
+function mad(arr, med){
+  const a=arr.filter(v=>Number.isFinite(v));
+  if(!a.length) return null;
+  const m = (med==null)? median(a) : med;
+  const devs = a.map(v=>Math.abs(v-m));
+  return median(devs);
+}
+function robustZ(x, med, madv){
+  if(x==null || med==null || madv==null || madv===0) return null;
+  return 0.6745 * (x - med) / madv;
+}
+
+function chip(label, tone, tip){
+  const clsBase = tone==="ok" ? "chip ok" : tone==="warn" ? "chip warn" : tone==="problem" ? "chip problem" : "chip red";
+  const cls = clsBase + (tip ? " tooltip" : "");
+  const tipAttr = tip ? ` data-tip="${escapeHtml(tip)}"` : "";
+  return `<span class="${cls}"${tipAttr}>${label}</span>`;
+}
+
+function classifyStringSDES(sdVal, esVal, t=DEFAULT_THRESH){
+  // return tone for SD and ES separately; null if missing
+  const out = {sdTone:null, esTone:null};
+  if(sdVal!=null){
+    out.sdTone = (sdVal<=t.sd_ok) ? "ok" : (sdVal>t.sd_red) ? "red" : "warn";
+  }
+  if(esVal!=null){
+    out.esTone = (esVal<=t.es_ok) ? "ok" : (esVal>t.es_red) ? "red" : "warn";
+  }
+  return out;
+}
+
+function sparklineSVG(vals, w=120, h=22){
+  const a = (vals||[]).filter(v=>Number.isFinite(v));
+  if(a.length<2) return "";
+  let mn=a[0], mx=a[0]; for(const v of a){ if(v<mn) mn=v; if(v>mx) mx=v; }
+  const rng = (mx-mn) || 1;
+  const pts = a.map((v,i)=>{
+    const x = (i/(a.length-1))*(w-2)+1;
+    const y = (1-((v-mn)/rng))*(h-2)+1;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <polyline fill="none" stroke="currentColor" stroke-width="1.5" points="${pts}"></polyline>
+  </svg>`;
+}
+
+function computePerStringStats(){
+  // Returns { byString: Map(string_id -> stats), shotDerived: Map(shot_id -> derived) }
+  // Deterministic: ONLY the locked thresholds in DEFAULT_THRESH. No heuristic scoring.
+  const t = DEFAULT_THRESH;
+  const byString = new Map();
+  const shotDerived = new Map();
+
+  const shots = state.shots || [];
+
+  // Group by string
+  const by = new Map();
+  for(const r of shots){
+    const sid = r.string_id;
+    if(!sid) continue;
+    if(!by.has(sid)) by.set(sid, []);
+    by.get(sid).push(r);
+  }
+
+  for(const [sid, arr] of by.entries()){
+    const rec = arr.filter(r=>!r.is_sighter && !r.exclude);
+    const sit = arr.filter(r=>!!r.is_sighter && !r.exclude);
+
+    // Velocity stats (record shots only)
+    const vList = rec.map(r=>_num(r.velocity_fps)).filter(v=>v!=null);
+    const vAvg = (vList.length ? mean(vList) : null);
+    const vSD  = (vList.length>=2 ? sd(vList) : null);
+    const vES  = (vList.length ? (Math.max(...vList)-Math.min(...vList)) : null);
+
+    const tones = classifyStringSDES(vSD, vES, t);
+
+    byString.set(sid, {
+      id: sid,
+      record: rec.length,
+      sighters: sit.length,
+      vAvg, vSD, vES,
+      sdTone: tones.sdTone,
+      esTone: tones.esTone,
+      spark: "" // rails-only: no sparkline
+    });
+
+    // Per-shot derived flags
+    for(const r of arr){
+      if(r.exclude){ shotDerived.set(r.id, {band:"good", chipsHTML:""}); continue; }
+
+      const chips = [];
+
+      // RADIAL MOA
+      const radial = _num(r.impact_radial_moa);
+      if(radial!=null){
+        if(radial > t.radial_problem){
+          chips.push(`<span class="flagpill red tooltip" data-tip="Radial ${fmt2(radial)} MOA (> ${fmt2(t.radial_problem)})">🚨 RAD ${fmt2(radial)}</span>`);
+        } else if(radial > t.radial_warn){
+          chips.push(`<span class="flagpill orange tooltip" data-tip="Radial ${fmt2(radial)} MOA (${fmt2(t.radial_warn)}–${fmt2(t.radial_problem)})">🔶 RAD ${fmt2(radial)}</span>`);
+        } else if(radial > t.radial_ok){
+          chips.push(`<span class="flagpill amber tooltip" data-tip="Radial ${fmt2(radial)} MOA (${fmt2(t.radial_ok)}–${fmt2(t.radial_warn)})">⚠️ RAD ${fmt2(radial)}</span>`);
+        }
+      }
+
+      // VERTICAL MOA (absolute)
+      const vert = _num(r.impact_vert_moa);
+      if(vert!=null){
+        const av = Math.abs(vert);
+        if(av > t.vert_red){
+          chips.push(`<span class="flagpill red tooltip" data-tip="Vertical |MOA| ${fmt2(av)} (> ${fmt2(t.vert_red)})">🚨 VERT ${fmt2(av)}</span>`);
+        } else if(av > t.vert_warn){
+          chips.push(`<span class="flagpill amber tooltip" data-tip="Vertical |MOA| ${fmt2(av)} (> ${fmt2(t.vert_warn)})">⚠️ VERT ${fmt2(av)}</span>`);
+        }
+      }
+
+      // VELOCITY DEV (in SD units, record-shots stats only)
+      const vel = _num(r.velocity_fps);
+      if(vel!=null && vAvg!=null && vSD!=null && vSD>0){
+        const z = Math.abs((vel - vAvg) / vSD);
+        if(z > t.vdev_problem){
+          chips.push(`<span class="flagpill red tooltip" data-tip="Vel dev ${fmt2(z)} SD (> ${fmt2(t.vdev_problem)} SD)">🚨 VDEV ${fmt2(z)}σ</span>`);
+        } else if(z > t.vdev_warn){
+          chips.push(`<span class="flagpill orange tooltip" data-tip="Vel dev ${fmt2(z)} SD (${fmt2(t.vdev_warn)}–${fmt2(t.vdev_problem)} SD)">🔶 VDEV ${fmt2(z)}σ</span>`);
+        } else if(z > t.vdev_ok){
+          chips.push(`<span class="flagpill amber tooltip" data-tip="Vel dev ${fmt2(z)} SD (${fmt2(t.vdev_ok)}–${fmt2(t.vdev_warn)} SD)">⚠️ VDEV ${fmt2(z)}σ</span>`);
+        }
+      }
+
+      // Band (max severity)
+      const html = chips.join(" ");
+      let band = "good";
+      if(html.includes("flagpill red")) band = "bad";
+      else if(html.includes("flagpill orange")) band = "problem";
+      else if(html.includes("flagpill amber")) band = "watch";
+
+      shotDerived.set(r.id, {band, chipsHTML: chips.join(" ")});
+    }
+  }
+
+  return { byString, shotDerived };
+}
+
+function fmtFps(v){ return (v==null||!Number.isFinite(v)) ? "" : Math.round(v).toString(); }
+function fmt0(v){ return (v==null||!Number.isFinite(v)) ? "" : String(Math.round(v)); }
+
+function fmt1(v){ return (v==null||!Number.isFinite(v)) ? "" : v.toFixed(1); }
+
+function fmt2(v){ return (v==null||!Number.isFinite(v)) ? "" : v.toFixed(2); }
+
+function stringMiniSummary(stats){
+  // SD/ES computed on record shots only; missing data allowed
+  const parts = [];
+  parts.push(`<span class="pill">shots: ${stats.record}</div>`);
+  parts.push(`<span class="pill">sighters: ${stats.sighters}</div>`);
+  if(stats.vAvg!=null){ parts.push(`<span class="pill">avg ${fmtFps(stats.vAvg)}</div>`); }
+  if(stats.vSD!=null){
+    const t = stats.sdTone || "warn";
+    parts.push(`<span class="pill ${t}">SD ${fmt1(stats.vSD)}</div>`);
+  }
+  if(stats.vES!=null){
+    const t = stats.esTone || "warn";
+    parts.push(`<span class="pill ${t}">ES ${fmtFps(stats.vES)}</div>`);
+  }
+  return parts.join(" ");
+}
+
+/* ------------------------- File helpers ------------------------- */
+function readFileAsText(file){
+  return new Promise((resolve,reject)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>resolve(String(fr.result||""));
+    fr.onerror = ()=>reject(fr.error || new Error("File read error"));
+    fr.readAsText(file);
+  });
+}
+function readFileAsArrayBuffer(file){
+  return new Promise((resolve,reject)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>resolve(fr.result);
+    fr.onerror = ()=>reject(fr.error || new Error("File read error"));
+    fr.readAsArrayBuffer(file);
+  });
+}
+
+/* ------------------------- CSV/TSV parsing ------------------------- */
+function detectDelimiter(text){
+  const lines = (text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(l=>l.trim().length>0);
+  if(!lines.length) return ",";
+  const line = lines[0];
+  const tabCount = (line.match(/\t/g)||[]).length;
+  const commaCount = (line.match(/,/g)||[]).length;
+  return (tabCount > commaCount) ? "\t" : ",";
+}
+function splitDelimitedLine(line, delim){
+  const out = [];
+  let cur = "";
+  let inQ = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch === '"'){
+      if(inQ && line[i+1] === '"'){ cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if(ch === delim && !inQ){
+      out.push(cur); cur = "";
+    } else cur += ch;
+  }
+  out.push(cur);
+  return out.map(s=>s.trim());
+}
+function parseDelimited(text){
+  const clean = (text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+  const delim = detectDelimiter(clean);
+  const lines = clean.split("\n").filter(l=>l.trim().length>0);
+  if(!lines.length) return {headers:[], rows:[], delim};
+  const headers = splitDelimitedLine(lines[0], delim).map(h=>h.replace(/^\uFEFF/,'').trim());
+  const rows = [];
+  for(let i=1;i<lines.length;i++){
+    const cells = splitDelimitedLine(lines[i], delim);
+    const row = {};
+    headers.forEach((h,idx)=> row[h] = (cells[idx]!==undefined ? cells[idx] : "") );
+    rows.push(row);
+  }
+  return {headers, rows, delim};
+}
+
+/* ------------------------- Minimal XLS (BIFF8) parser ------------------------- */
+/* Purpose-built Excel 97-2003 .xls reader to extract Garmin chrono tables. */
+function u8(arr){ return new Uint8Array(arr); }
+function u16(dv, o){ return dv.getUint16(o, true); }
+function u32(dv, o){ return dv.getUint32(o, true); }
+function f64(dv, o){ return dv.getFloat64(o, true); }
+
+function parseOLE(buffer){
+  const bytes = u8(buffer);
+  const dv = new DataView(buffer);
+  const sig = Array.from(bytes.slice(0,8)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(sig !== "d0cf11e0a1b11ae1") throw new Error("Not an OLE .xls file");
+
+  const sectorShift = u16(dv, 0x1E);
+  const sectorSize = 1 << sectorShift;
+
+  const numFATSectors = u32(dv, 0x2C);
+  const dirStart = u32(dv, 0x30);
+  const miniStreamCutoff = u32(dv, 0x38);
+  const miniFATStart = u32(dv, 0x3C);
+  const numMiniFATSectors = u32(dv, 0x40);
+  const difatStart = u32(dv, 0x44);
+  const numDIFATSectors = u32(dv, 0x48);
+
+  function sectorOffset(sid){ return (sid + 1) * sectorSize; }
+
+  const difat = [];
+  for(let i=0;i<109;i++){
+    const val = u32(dv, 0x4C + i*4);
+    if(val !== 0xFFFFFFFF) difat.push(val);
+  }
+  let nextDIFAT = difatStart;
+  for(let n=0; n<numDIFATSectors && nextDIFAT !== 0xFFFFFFFF; n++){
+    const off = sectorOffset(nextDIFAT);
+    for(let i=0;i<(sectorSize/4)-1;i++){
+      const val = u32(dv, off + i*4);
+      if(val !== 0xFFFFFFFF) difat.push(val);
+    }
+    nextDIFAT = u32(dv, off + sectorSize - 4);
+  }
+
+  const FAT = [];
+  difat.slice(0, numFATSectors).forEach(fs=>{
+    const off = sectorOffset(fs);
+    for(let i=0;i<sectorSize/4;i++) FAT.push(u32(dv, off + i*4));
+  });
+
+  function readStream(startSid){
+    const chunks = [];
+    let sid = startSid;
+    const seen = new Set();
+    // Treat both ENDOFCHAIN (0xFFFFFFFE) and NOSTREAM (0xFFFFFFFF) as termination.
+    while(sid !== 0xFFFFFFFF && sid !== 0xFFFFFFFE){
+      if(seen.has(sid)) throw new Error("OLE FAT cycle");
+      seen.add(sid);
+      const off = sectorOffset(sid);
+      chunks.push(bytes.slice(off, off + sectorSize));
+      sid = FAT[sid];
+      if(sid === undefined) throw new Error("OLE FAT out of range");
+    }
+    let total = 0; chunks.forEach(c=> total += c.length);
+    const out = new Uint8Array(total);
+    let p=0; chunks.forEach(c=>{ out.set(c,p); p+=c.length; });
+    return out;
+  }
+
+  const dirBytes = readStream(dirStart);
+  const dirDV = new DataView(dirBytes.buffer, dirBytes.byteOffset, dirBytes.byteLength);
+
+  let miniFAT = null;
+  if(miniFATStart !== 0xFFFFFFFF && numMiniFATSectors > 0){
+    const miniFatBytes = readStream(miniFATStart);
+    const mdv = new DataView(miniFatBytes.buffer, miniFatBytes.byteOffset, miniFatBytes.byteLength);
+    miniFAT = [];
+    for(let i=0;i<miniFatBytes.byteLength/4;i++) miniFAT.push(mdv.getUint32(i*4, true));
+  }
+
+  const entries = [];
+  for(let off=0; off+128<=dirBytes.byteLength; off+=128){
+    const nameLen = dirDV.getUint16(off + 64, true);
+    if(nameLen < 2) continue;
+    let name = "";
+    for(let i=0; i<nameLen-2; i+=2){
+      const c = dirDV.getUint16(off + i, true);
+      if(c===0) break;
+      name += String.fromCharCode(c);
+    }
+    const type = dirDV.getUint8(off + 66);
+    const startSid = dirDV.getUint32(off + 116, true);
+    const sizeLow = dirDV.getUint32(off + 120, true);
+    const sizeHigh = dirDV.getUint32(off + 124, true);
+    const size = sizeLow + sizeHigh * 0x100000000;
+    entries.push({name, type, startSid, size});
+  }
+
+  const root = entries.find(e=>e.type===5);
+  let miniStream = null;
+  if(root && root.startSid !== 0xFFFFFFFF && root.startSid !== 0xFFFFFFFE) miniStream = readStream(root.startSid);
+
+  function readMiniStream(startSid, size){
+    if(!miniFAT || !miniStream) throw new Error("MiniFAT not available");
+    const miniSectorSize = 64;
+    const out = new Uint8Array(size);
+    let sid = startSid, pos = 0;
+    const seen = new Set();
+    while(sid !== 0xFFFFFFFF && sid !== 0xFFFFFFFE && pos < size){
+      if(seen.has(sid)) throw new Error("MiniFAT cycle");
+      seen.add(sid);
+      const off = sid * miniSectorSize;
+      const take = Math.min(miniSectorSize, size - pos);
+      out.set(miniStream.slice(off, off + take), pos);
+      pos += take;
+      sid = miniFAT[sid];
+      if(sid === undefined) throw new Error("MiniFAT out of range");
+    }
+    return out;
+  }
+
+  function getStreamByName(names){
+    for(const nm of names){
+      const ent = entries.find(e=>e.name === nm);
+      if(ent){
+        if(ent.size < miniStreamCutoff && ent.startSid !== 0xFFFFFFFF && ent.startSid !== 0xFFFFFFFE && miniFAT && miniStream) return readMiniStream(ent.startSid, ent.size);
+        if(ent.startSid !== 0xFFFFFFFF && ent.startSid !== 0xFFFFFFFE){
+          const raw = readStream(ent.startSid);
+          return raw.slice(0, ent.size);
+        }
+      }
+    }
+    return null;
+  }
+
+  const wb = getStreamByName(["Workbook","Book"]);
+  if(!wb) throw new Error("Workbook stream not found in .xls");
+  return wb;
+}
+
+function readXLUnicodeString(dv, o){
+  const cch = dv.getUint16(o, true); o += 2;
+  const flags = dv.getUint8(o); o += 1;
+  const fHighByte = flags & 0x01;
+  const fExtSt = flags & 0x04;
+  const fRichSt = flags & 0x08;
+  let cRun = 0, cbExtRst = 0;
+  if(fRichSt){ cRun = dv.getUint16(o, true); o += 2; }
+  if(fExtSt){ cbExtRst = dv.getUint32(o, true); o += 4; }
+
+  let chars = [];
+  if(fHighByte){
+    for(let i=0;i<cch;i++) chars.push(String.fromCharCode(dv.getUint16(o + i*2, true)));
+    o += cch*2;
+  } else {
+    for(let i=0;i<cch;i++) chars.push(String.fromCharCode(dv.getUint8(o + i)));
+    o += cch;
+  }
+  if(fRichSt) o += cRun * 4;
+  if(fExtSt) o += cbExtRst;
+  return {str: chars.join(""), next: o};
+}
+
+function parseRK(rk){
+  const fX100 = rk & 0x01;
+  const fInt = rk & 0x02;
+  let val;
+  if(fInt){
+    val = (rk >> 2);
+  } else {
+    const raw = (rk & 0xFFFFFFFC) >>> 0;
+    const buf = new ArrayBuffer(8);
+    const dv = new DataView(buf);
+    dv.setUint32(0, 0, true);
+    dv.setUint32(4, raw, true);
+    val = dv.getFloat64(0, true);
+  }
+  if(fX100) val = val / 100;
+  return val;
+}
+
+function parseBIFF8Workbook(wbBytes){
+  const dv = new DataView(wbBytes.buffer, wbBytes.byteOffset, wbBytes.byteLength);
+
+  // Global pass: find sheets and SST
+  let sheets = [];
+  let sst = [];
+  let sstPending = null;
+
+  function readSST(at, len){
+    const end = at + len;
+    if(!sstPending){
+      const total = dv.getUint32(at, true); at += 4;
+      const unique = dv.getUint32(at, true); at += 4;
+      sstPending = {total, unique, strings:[], at, end};
+    } else {
+      sstPending.at = at;
+      sstPending.end = end;
+    }
+    while(sstPending.strings.length < sstPending.unique && sstPending.at < sstPending.end){
+      try{
+        const res = readXLUnicodeString(dv, sstPending.at);
+        sstPending.strings.push(res.str);
+        sstPending.at = res.next;
+      } catch(e){
+        break;
+      }
+    }
+    if(sstPending.strings.length >= sstPending.unique){
+      sst = sstPending.strings;
+      sstPending = null;
+    }
+  }
+
+  let pos = 0;
+  while(pos + 4 <= dv.byteLength){
+    const rt = dv.getUint16(pos, true);
+    const rl = dv.getUint16(pos+2, true);
+    const dataOff = pos + 4;
+
+    if(rt === 0x0085){ // BOUNDSHEET8
+      const bofPos = dv.getUint32(dataOff, true);
+      const cch = dv.getUint8(dataOff + 6);
+      const flags = dv.getUint8(dataOff + 7);
+      let name = "";
+      if(flags & 0x01){
+        for(let i=0;i<cch;i++) name += String.fromCharCode(dv.getUint16(dataOff + 8 + i*2, true));
+      } else {
+        for(let i=0;i<cch;i++) name += String.fromCharCode(dv.getUint8(dataOff + 8 + i));
+      }
+      sheets.push({name, bofPos});
+    } else if(rt === 0x00FC){ // SST
+      readSST(dataOff, rl);
+    } else if(rt === 0x003C && sstPending){ // CONTINUE
+      readSST(dataOff, rl);
+    }
+
+    pos = dataOff + rl;
+  }
+
+  if(!sheets.length) throw new Error("No sheets found in XLS");
+  // Parse each sheet into a grid; pick the one with Garmin-ish headers.
+  function parseSheetAt(bofPos){
+    const cells = new Map();
+    let maxR = 0, maxC = 0;
+    let p = bofPos;
+    while(p + 4 <= dv.byteLength){
+      const rt = dv.getUint16(p, true);
+      const rl = dv.getUint16(p+2, true);
+      const dataOff = p + 4;
+      if(rt === 0x000A) break; // EOF
+
+      if(rt === 0x00FD){ // LABELSST
+        const r = dv.getUint16(dataOff, true);
+        const c = dv.getUint16(dataOff+2, true);
+        const sstIdx = dv.getUint32(dataOff+6, true);
+        const v = sst[sstIdx] ?? "";
+        cells.set(r + "," + c, v);
+        maxR = Math.max(maxR, r); maxC = Math.max(maxC, c);
+      } else if(rt === 0x0203){ // NUMBER
+        const r = dv.getUint16(dataOff, true);
+        const c = dv.getUint16(dataOff+2, true);
+        const v = f64(dv, dataOff+6);
+        cells.set(r + "," + c, v);
+        maxR = Math.max(maxR, r); maxC = Math.max(maxC, c);
+      } else if(rt === 0x027E){ // RK
+        const r = dv.getUint16(dataOff, true);
+        const c = dv.getUint16(dataOff+2, true);
+        const rk = dv.getUint32(dataOff+6, true);
+        const v = parseRK(rk);
+        cells.set(r + "," + c, v);
+        maxR = Math.max(maxR, r); maxC = Math.max(maxC, c);
+      } else if(rt === 0x00BD){ // MULRK
+        const r = dv.getUint16(dataOff, true);
+        let c1 = dv.getUint16(dataOff+2, true);
+        const c2 = dv.getUint16(dataOff + rl - 2, true);
+        let off = dataOff + 4;
+        for(let c=c1; c<=c2; c++){
+          const rk = dv.getUint32(off + 2, true);
+          const v = parseRK(rk);
+          cells.set(r + "," + c, v);
+          maxR = Math.max(maxR, r); maxC = Math.max(maxC, c);
+          off += 6;
+        }
+      } else if(rt === 0x0204){ // LABEL
+        const r = dv.getUint16(dataOff, true);
+        const c = dv.getUint16(dataOff+2, true);
+        const len = dv.getUint16(dataOff+6, true);
+        let str = "";
+        for(let i=0;i<len;i++) str += String.fromCharCode(dv.getUint8(dataOff+8+i));
+        cells.set(r + "," + c, str);
+        maxR = Math.max(maxR, r); maxC = Math.max(maxC, c);
+      }
+      p = dataOff + rl;
+    }
+    const grid = [];
+    for(let r=0; r<=maxR; r++){
+      const row = [];
+      let hasAny=false;
+      for(let c=0;c<=maxC;c++){
+        const v = cells.get(r + "," + c);
+        const val = (v===undefined ? "" : v);
+        if(String(val).trim()!=="") hasAny=true;
+        row.push(val);
+      }
+      if(hasAny) grid.push(row);
+    }
+    return grid;
+  }
+
+  const grids = sheets.map(sh=>({name:sh.name, grid: parseSheetAt(sh.bofPos)}));
+  const scoreGrid = (grid)=>{
+    const norm = (x)=>String(x||"").toLowerCase();
+    let best = 0;
+    for(let i=0;i<Math.min(grid.length, 30); i++){
+      const row = grid[i].map(norm).join(" ");
+      let s = 0;
+      if(row.includes("fps") || row.includes("speed") || row.includes("velocity")) s += 3;
+      if(row.includes("time")) s += 2;
+      if(row.includes("shot")) s += 1;
+      best = Math.max(best, s);
+    }
+    return best;
+  };
+  grids.sort((a,b)=>scoreGrid(b.grid)-scoreGrid(a.grid));
+  return grids[0].grid;
+}
+
+async function parseXLSFileToObjects(file){
+  const ab = await readFileAsArrayBuffer(file);
+  const wbStream = parseOLE(ab);
+  const grid = parseBIFF8Workbook(wbStream);
+  const norm = (x)=>String(x??"").trim();
+
+  let headerRowIdx = -1;
+  for(let i=0;i<Math.min(grid.length, 40); i++){
+    const row = grid[i].map(norm);
+    const joined = row.join(" ").toLowerCase();
+    if(joined.includes("fps") || joined.includes("speed") || joined.includes("velocity")){
+      headerRowIdx = i;
+      break;
+    }
+  }
+  if(headerRowIdx < 0) headerRowIdx = 0;
+
+  const headers = grid[headerRowIdx].map(norm).filter(h=>h!=="");
+  const rows = [];
+  for(let i=headerRowIdx+1; i<grid.length; i++){
+    const r = grid[i];
+    const allEmpty = r.every(v=>norm(v)==="");
+    if(allEmpty) continue;
+    const obj = {};
+    for(let c=0;c<headers.length;c++){
+      obj[headers[c]] = norm(r[c]);
+    }
+    // if row still empty, skip
+    if(Object.values(obj).every(v=>String(v||"").trim()==="")) continue;
+    rows.push(obj);
+  }
+  return {headers, rows};
+}
+
+/* ------------------------- Importers ------------------------- */
+function ensureChronoSource(name, headers, rows){
+  const existing = state.chronoSources.find(x=>x.name===name);
+  if(existing){
+    existing.headers = headers; existing.rows = rows; existing.count = rows.length;
+  } else {
+    state.chronoSources.push({name, headers, rows, count: rows.length});
+  }
+}
+
+function importGarminRowsFromObjects(sourceName, headers, rows){
+  ensureChronoSource(sourceName, headers, rows);
+  setStatus(`Loaded Garmin: ${sourceName}\nRows: ${rows.length}\nHeaders: ${headers.join(" | ")}`);
+  toast("Garmin loaded", `${sourceName} (${rows.length})`);
+  renderPairingPanel();
+  render();
+}
+
+async function importGarminFile(file){
+  const name = file.name || "garmin";
+  const ext = name.toLowerCase().split(".").pop();
+  if(ext === "xls"){
+    const parsed = await parseXLSFileToObjects(file);
+    return importGarminRowsFromObjects(name, parsed.headers, parsed.rows);
+  }
+  if(ext === "xlsx"){
+    toast("Garmin .xlsx", "This v0 build supports .csv and binary .xls. Export Garmin as CSV for .xlsx.");
+    return;
+  }
+  const text = await readFileAsText(file);
+  // Garmin CSV sometimes has a title row above headers; find header row that contains FPS/speed
+  const lines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(l=>l.trim().length>0);
+  let headerIdx = 0;
+  for(let i=0;i<Math.min(lines.length, 30); i++){
+    const l = lines[i].toLowerCase();
+    if(l.includes("fps") || l.includes("speed") || l.includes("velocity")){
+      headerIdx = i; break;
+    }
+  }
+  const sliced = lines.slice(headerIdx).join("\n");
+  const parsed = parseDelimited(sliced);
+  return importGarminRowsFromObjects(name, parsed.headers, parsed.rows);
+}
+
+
+async function importAMPCSV(file){
+  const text = await readFileAsText(file);
+  const parsed = parseDelimited(text);
+  const headers = parsed.headers;
+  const rows = parsed.rows;
+
+  // Two common AMP export shapes:
+  // A) "Matrix" form: first column is row label (Flyer, Peak Force, Terminal Force, etc),
+  //    trace columns are "Trace 1".."Trace N"
+  // B) "Wide" form: headers contain "Trace 1 Peak Force", etc
+  const firstCol = headers[0];
+  const labelColLooksLikeMatrix = rows.some(r=>{
+    const v = String(r[firstCol]||"").toLowerCase();
+    return v.includes("peak force") || v.includes("terminal force") || v==="flyer";
+  });
+
+  const traces = [];
+  if(labelColLooksLikeMatrix){
+    const byLabel = {};
+    for(const r of rows){
+      const label = String(r[firstCol]||"").trim();
+      if(!label) continue;
+      byLabel[label.toLowerCase()] = r;
+    }
+    const rowFlyer = byLabel["flyer"] || null;
+    const rowPeak  = byLabel["peak force"] || null;
+    const rowTerm  = byLabel["terminal force"] || null;
+
+    const traceCols = headers.filter(h=>/^trace\s*\d+$/i.test(String(h||"").trim()));
+    traceCols.sort((a,b)=>{
+      const na = Number(String(a).match(/\d+/)?.[0]||0);
+      const nb = Number(String(b).match(/\d+/)?.[0]||0);
+      return na-nb;
+    });
+
+    for(const col of traceCols){
+      const n = Number(String(col).match(/\d+/)?.[0]||0);
+      const peak = rowPeak ? Number(String(rowPeak[col]||"").replace(/[^\d.\-]/g,"")) : "";
+      const term = rowTerm ? Number(String(rowTerm[col]||"").replace(/[^\d.\-]/g,"")) : "";
+      const flyerRaw = rowFlyer ? String(rowFlyer[col]||"").trim().toLowerCase() : "";
+      const flyer = (flyerRaw==="true" || flyerRaw==="1" || flyerRaw==="yes" || flyerRaw==="y" || flyerRaw==="t");
+      traces.push({
+        idx:n,
+        peak: isFinite(peak)?peak:"",
+        terminal: isFinite(term)?term:"",
+        flyer,
+        excluded: flyer
+      });
+    }
+  } else {
+    // Fallback: Wide form (best-effort)
+    const traceNums = new Set();
+    for(const h of headers){
+      const m = String(h).match(/trace\s+(\d+)/i);
+      if(m) traceNums.add(Number(m[1]));
+    }
+    const pickCol = (n, key)=>{
+      const lowKey = key.toLowerCase();
+      for(const h of headers){
+        const l = h.toLowerCase();
+        if(l.includes("trace "+n) && l.includes(lowKey)) return h;
+      }
+      return null;
+    };
+    const row0 = rows[0] || {};
+    Array.from(traceNums).sort((a,b)=>a-b).forEach(n=>{
+      const colPeak = pickCol(n, "peak force");
+      const colTerm = pickCol(n, "terminal force");
+      const colFly  = pickCol(n, "flyer");
+      const peak = colPeak ? Number(row0[colPeak]||"") : "";
+      const term = colTerm ? Number(row0[colTerm]||"") : "";
+      const flyerRaw = colFly ? String(row0[colFly]||"").toLowerCase() : "";
+      const flyer = (flyerRaw==="true" || flyerRaw==="1" || flyerRaw==="yes");
+      traces.push({idx:n, peak: isFinite(peak)?peak:"", terminal: isFinite(term)?term:"", flyer, excluded: flyer});
+    });
+  }
+
+  state.amp = { traces, meta:{file:file.name, n:traces.length} };
+  toast("AMP loaded", `${file.name} (${traces.length} traces)`);
+  render();
+}
+
+
+
+function mmToMOA(mm, distYd){
+  const m = Number(mm);
+  const d = Number(distYd);
+  if(!isFinite(m) || !isFinite(d) || d<=0) return "";
+  const inches = m / 25.4;
+  const moa = inches / (1.047 * (d/100));
+  return moa;
+}
+
+// ShotMarker "Archived Data" style: multiple blocks with a header line containing Date/Relay etc.
+// We'll parse blocks separated by lines that start with "Date:"
+async function importShotMarkerCSV(file){
+  const text = await readFileAsText(file);
+  const lines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
+
+  // ShotMarker archive format: header lines, then repeating blocks:
+  // "Sep 25 2025,R3,#227 (HWW),1115 x 1115,NRA Long Range FC at 1000y,219-12X"
+  // followed by a CSV header row like ",time,tags,id,score,..." and shot rows.
+  const isBlockHeader = (l)=>/^[A-Z][a-z]{2}\s+\d{1,2}\s+\d{4},/.test((l||"").trim());
+  const blocks = [];
+  let cur = null;
+
+  for(const line of lines){
+    if(isBlockHeader(line)){
+      if(cur && cur.lines.length) blocks.push(cur);
+      cur = { header: (line||"").trim(), lines: [] };
+      continue;
+    }
+    if(cur) cur.lines.push(line);
+  }
+  if(cur && cur.lines.length) blocks.push(cur);
+
+  if(!blocks.length){
+    toast("ShotMarker import", "No archive blocks found. File format may be different than expected.");
+    setStatus("ShotMarker parse: 0 blocks found.\nExpected lines starting like: \"Sep 25 2025,R3,...\"");
+    return;
+  }
+
+  const smStrings = [];
+  const sessionBase = file.name.replace(/\.[^.]+$/,"");
+  let stringCounter = 0;
+
+  for(const b of blocks){
+    const nonEmpty = b.lines.filter(l=>String(l||"").trim().length>0);
+    let headerLineIdx = -1;
+    for(let i=0;i<Math.min(nonEmpty.length, 30); i++){
+      const l = nonEmpty[i].toLowerCase();
+      if(l.includes(",time") && l.includes("x") && l.includes("y")) { headerLineIdx = i; break; }
+    }
+    if(headerLineIdx < 0) continue;
+
+    const csvText = nonEmpty.slice(headerLineIdx).join("\n");
+    const parsed = parseDelimited(csvText);
+    const headersLower = parsed.headers.map(h=>String(h||"").toLowerCase());
+
+    const pick = (...names)=>{
+      for(const n of names){
+        const idx = headersLower.indexOf(String(n).toLowerCase());
+        if(idx>=0) return parsed.headers[idx];
+      }
+      for(const n of names){
+        const nn = String(n).toLowerCase();
+        const idx = headersLower.findIndex(h=>h.includes(nn));
+        if(idx>=0) return parsed.headers[idx];
+      }
+      return null;
+    };
+
+    const colId   = pick("id");
+    const colTags = pick("tags");
+    const colXmm  = pick("x mm","x (mm)","x");
+    const colYmm  = pick("y mm","y (mm)","y");
+    const colScore= pick("score");
+    const colTime = pick("time");
+
+    let distYd = "";
+    const dm = b.header.match(/(\d{3,4})\s*y/i) || b.header.match(/(\d{3,4})\s*yd/i);
+    if(dm) distYd = Number(dm[1]);
+
+    const parts = b.header.split(",");
+    const datePart = parts[0] ? parts[0].trim() : "";
+    const relayPart = parts[1] ? parts[1].trim() : "";
+    const targetPart = parts[2] ? parts[2].trim() : "";
+    const sessionLabel = [datePart, relayPart, targetPart].filter(Boolean).join(" ");
+
+    stringCounter++;
+    const stringId = "SM_String_" + String(stringCounter).padStart(2,"0");
+    const session_id = sessionBase;
+
+    const shots = [];
+    for(const r of parsed.rows){
+      if(colId){
+        const rawId = String(r[colId]||"").trim();
+        if(!rawId || !/^\d+$/.test(rawId)) continue; // skip blank/summary rows
+      }
+      const inString = colId ? Number(r[colId]||"") : (shots.length+1);
+      const tags = colTags ? String(r[colTags]||"").trim().toLowerCase() : "";
+      const isSighter = tags.includes("sighter");
+
+      const x = colXmm ? Number(String(r[colXmm]||"").replace(",",".")) : NaN;
+      const y = colYmm ? Number(String(r[colYmm]||"").replace(",",".")) : NaN;
+
+      const hmoa = (isFinite(x) && distYd) ? Number(mmToMOA(x, distYd)) : "";
+      const vmoa = (isFinite(y) && distYd) ? Number(mmToMOA(y, distYd)) : "";
+      const rmoa = (isFinite(hmoa) && isFinite(vmoa)) ? Math.sqrt(hmoa*hmoa + vmoa*vmoa) : "";
+
+      shots.push({
+        id: `${stringId}:${inString}`,
+        shot_index: 0,
+        timestamp_local: colTime ? String(r[colTime]||"") : "",
+        distance_yd: distYd || "",
+        session_id,
+        string_id: stringId,
+        shot_index_in_string: isFinite(inString)?inString:(shots.length+1),
+        impact_vert_moa: vmoa,
+        impact_horiz_moa: hmoa,
+        impact_radial_moa: rmoa,
+        shotmarker_target_id: sessionLabel || stringId,
+        shotmarker_bull_id: "",
+        score_value: colScore ? String(r[colScore]||"") : "",
+        velocity_fps: "",
+        chrono_shot_index: "",
+        chrono_source_id: "",
+        amp_avg_force: "",
+        amp_peak_force: "",
+        amp_event_index: "",
+        amp_program: "",
+        primer_seat_in: "",
+        wind_zero_delta_moa: "",
+        elev_zero_delta_moa: "",
+        wind_call: "",
+        is_sighter: isSighter,
+        join_confidence: "sm-only",
+        exclude: false,
+        notes: ""
+      });
+    }
+
+    smStrings.push({ id: stringId, session_id, string_label: sessionLabel, distance_yd: distYd || "", shots });
+  }
+
+  if(!smStrings.length){
+    toast("ShotMarker import", "Archive blocks found, but no shot tables parsed.");
+    setStatus("ShotMarker parse: blocks found, but could not locate header row \",time,...,x mm,y mm,...\".");
+    return;
+  }
+
+  state.smStrings = smStrings;
+  state.shots = smStrings.flatMap(s=>s.shots);
+  state._collapseSeeded = false;
+  state.collapsedStrings = new Set();
+
+  let idx = 1;
+  for(const sh of state.shots) sh.shot_index = idx++;
+
+  refreshStringSelect();
+  toast("ShotMarker loaded", `${file.name} (${state.shots.length} shots across ${smStrings.length} strings)`);
+  renderPairingPanel();
+  render();
+}
+
+
+
+
+
+
+function applyPairings(){
+  state.pairings = state.pairings || {};
+  state.chronoSources = state.chronoSources || [];
+  state.amp = state.amp || {traces:[], meta:{}};
+
+  // Reset join fields
+  for(const sh of state.shots){
+    sh.velocity_fps = "";
+    sh.chrono_shot_index = "";
+    sh.chrono_source_id = "";
+    sh.amp_avg_force = "";
+    sh.amp_peak_force = "";
+    sh.amp_event_index = "";
+    sh.amp_program = "";
+    if(sh.join_confidence && sh.join_confidence!=="sm-only") sh.join_confidence = "sm-only";
+  }
+
+  for(const sm of state.smStrings){
+    sm._join = sm._join || {velAssigned:0, velTotal:0, ampAssigned:0, ampTotal:0};
+    sm._join.velAssigned = 0; sm._join.velTotal = 0;
+    sm._join.ampAssigned = 0; sm._join.ampTotal = 0;
+  }
+
+  // Garmin join (shot order inside string; include sighters; skip only excluded)
+  for(const sm of state.smStrings){
+    const srcName = (state.pairings||{})[sm.id];
+    if(!srcName) continue;
+    const src = (state.chronoSources||[]).find(s=>s.name===srcName);
+    if(!src) continue;
+
+    const headersLower = src.headers.map(h=>String(h||"").toLowerCase());
+    const pick = (...names)=>{
+      for(const n of names){
+        const idx = headersLower.indexOf(String(n).toLowerCase());
+        if(idx>=0) return src.headers[idx];
+      }
+      for(const n of names){
+        const nn = String(n).toLowerCase();
+        const idx = headersLower.findIndex(h=>h.includes(nn));
+        if(idx>=0) return src.headers[idx];
+      }
+      return null;
+    };
+    const colVel = pick("speed (fps)","speed","v","fps");
+    const colNo  = pick("#","shot #","shot#","shot number","no");
+
+    // Keep only actual shot rows from Garmin (velocity must be numeric)
+    const garminShotRows = src.rows.filter(r=>{
+      const v = colVel ? Number(String(r[colVel]||"").replace(/[^\d.\-]/g,"")) : NaN;
+      return isFinite(v);
+    });
+
+    const velList = garminShotRows.map(r=> Number(String(r[colVel]||"").replace(/[^\d.\-]/g,"")) );
+    const noList  = garminShotRows.map((r,i)=> {
+      const n = colNo ? Number(String(r[colNo]||"").replace(/[^\d]/g,"")) : (i+1);
+      return isFinite(n)?n:(i+1);
+    });
+
+    const smShots = state.shots
+      .filter(sh=>sh.string_id===sm.id && !sh.exclude)
+      .sort((a,b)=>a.shot_index_in_string-b.shot_index_in_string);
+
+    sm._join.velTotal = smShots.length;
+
+    for(let i=0;i<smShots.length;i++){
+      const v = velList[i];
+      if(isFinite(v)){
+        smShots[i].velocity_fps = v;
+        smShots[i].chrono_source_id = src.name;
+        smShots[i].chrono_shot_index = noList[i];
+        smShots[i].join_confidence = "order";
+        sm._join.velAssigned++;
+      } else {
+        smShots[i].join_confidence = "order-missing";
+      }
+    }
+  }
+
+  // AMP join (global firing order across strings; include sighters; skip only excluded)
+  const traces = (state.amp?.traces || []).slice().sort((a,b)=>(a.idx||0)-(b.idx||0));
+  const orderedShots = [];
+  for(const sm of state.smStrings){
+    const ss = state.shots
+      .filter(sh=>sh.string_id===sm.id && !sh.exclude)
+      .sort((a,b)=>a.shot_index_in_string-b.shot_index_in_string);
+    orderedShots.push(...ss);
+    sm._join.ampTotal = ss.length;
+  }
+
+  for(let i=0;i<orderedShots.length;i++){
+    const sh = orderedShots[i];
+    const tr = traces[i];
+    if(!tr) break;
+    sh.amp_event_index = tr.idx;
+    sh.amp_peak_force = tr.peak;
+    sh.amp_avg_force  = tr.terminal;
+    sh.amp_program = state.amp?.meta?.file ? state.amp.meta.file : "";
+  }
+
+  for(const sm of state.smStrings){
+    const ss = state.shots.filter(sh=>sh.string_id===sm.id && !sh.exclude);
+    sm._join.ampAssigned = ss.filter(sh=>sh.amp_event_index!=="" && sh.amp_event_index!==undefined).length;
+  }
+}
+
+
+function refreshStringSelect(){
+  const sel = document.getElementById("applyStringSel");
+  if(!sel) return;
+
+  const prev = sel.value || "";
+  const strings = state.smStrings || [];
+
+  const opts = ['<option value="">— Select string —</option>'];
+  for(const s of strings){
+    const n = (s.shots||[]).length;
+    const lbl = `${s.id}${s.string_label?` • ${s.string_label}`:""} • ${n} shots`;
+    opts.push(`<option value="${escapeHtml(String(s.id||""))}">${escapeHtml(lbl)}</option>`);
+  }
+  sel.innerHTML = opts.join("");
+  if(prev) sel.value = prev;
+}
+
+
+function render(){
+  // Counts pills
+  const elShots = $("pillShots");
+  if(elShots) elShots.textContent = `Shots: ${(state.shots||[]).length}`;
+
+  const elSM = $("pillSM") || $("pillStrings");
+  if(elSM) elSM.textContent = `SM strings: ${(state.smStrings||[]).length}`;
+
+  const elChrono = $("pillChrono");
+  if(elChrono) elChrono.textContent = `Chrono sources: ${(state.chronoSources||state.garminSources||[]).length}`;
+
+  const ampN = (state.shots||[]).filter(r=>Number.isFinite(Number(r.amp_avg_force)) || Number.isFinite(Number(r.amp_peak_force))).length;
+  const elAmp = $("pillAMP") || $("pillAmp");
+  if(elAmp) elAmp.textContent = `AMP traces: ${ampN}`;
+
+  // Derivations
+  const {byString, shotDerived} = computePerStringStats();
+
+  // Pairing panel uses byString for accurate record/sighter counts + SD/ES
+  renderPairingPanel(byString);
+
+  // Manual inputs: string dropdown refresh
+  refreshStringSelect();
+
+  // Table header with tooltips
+  const theadRow = $("thead");
+  if (theadRow){
+    theadRow.innerHTML = SCHEMA.map(c=>{
+      const tip = TOOLTIP_MAP[c.key] || "";
+      const cls = tip ? "tooltip" : "";
+      const tipAttr = tip ? ` data-tip="${escapeHtml(tip)}"` : "";
+      return `<th class="${cls}"${tipAttr}>${c.label}</th>`;
+    }).join("");
+  }
+
+  const tbody = $("tbody");
+  const rows = [];
+
+  const filter = (state.flagFilter||"all");
+  const showSighters = !!state.showSighters;
+
+  // Flat list (sorted by string + shot order), exclude excluded shots
+  const shotsAll = (state.shots||[]).filter(r=>!r.exclude).slice();
+
+  // Group by string_id
+  const by = new Map();
+  for(const r of shotsAll){
+    const sid = r.string_id || "(no string)";
+    if(!by.has(sid)) by.set(sid, []);
+    by.get(sid).push(r);
+  }
+  for(const arr of by.values()){
+    arr.sort((a,b)=> (a.shot_index_in_string||0) - (b.shot_index_in_string||0));
+  }
+
+  // Order strings: prefer SM string order, then any leftovers
+  const ordered = [];
+  const known = new Set();
+  for(const s of (state.smStrings||[])){
+    if(by.has(s.id)){ ordered.push(s.id); known.add(s.id); }
+  }
+  for(const sid of Array.from(by.keys()).sort()){
+    if(!known.has(sid)) ordered.push(sid);
+  }
+
+  // Default: start with all SM targets rolled up (collapsed).
+  // We only seed this once per load so user toggles persist during the session.
+  if(!state._collapseSeeded){
+    state.collapsedStrings = new Set(ordered);
+    state._collapseSeeded = true;
+  }
+
+
+  let shown = 0;
+
+  function shotPassesFilter(r, d){
+    const isS = !!r.is_sighter;
+    // sighter toggle (unless filter is explicitly sighters)
+    if(isS && !showSighters && filter!=="sighters") return false;
+    // Filter logic
+    if(filter==="good" && (isS || d.band!=="good")) return false;
+    if(filter==="problem" && !(d.band==="problem" || d.band==="bad")) return false;
+    if(filter==="sighters" && !isS) return false;
+    return true;
+  }
+
+  for(const sid of ordered){
+    const arr = by.get(sid) || [];
+    const sInfo = (state.smStrings||[]).find(x=>x.id===sid);
+    const label = sInfo?.label || sid;
+
+    const st = byString.get(sid) || {record:0, sighters:0, vAvg:null, vSD:null, vES:null, sdTone:"ok", esTone:"ok"};
+    const collapsed = state.collapsedStrings?.has(sid);
+
+    // visible count under current filter
+    let vis = 0;
+    for(const r of arr){
+      const d = shotDerived.get(r.id) || {band:"good", chipsHTML:""};
+      if(shotPassesFilter(r,d)) vis++;
+    }
+
+    // Group header row
+    const sumBits = [];
+    sumBits.push(`${st.record||0} rec`);
+    if(st.sighters) sumBits.push(`${st.sighters} s`);
+    if(st.vAvg!=null) sumBits.push(`Avg ${fmt0(st.vAvg)}`);
+    if(st.vES!=null) sumBits.push(`ES ${fmt0(st.vES)}`);
+    if(st.vSD!=null) sumBits.push(`SD ${fmt1(st.vSD)}`);
+    sumBits.push(`Shown ${vis}`);
+    const sum = sumBits.join(" • ");
+
+    rows.push(`<tr class="groupRow ${collapsed ? "isCollapsed":""}" data-sid="${escapeHtml(sid)}">
+      <td colspan="${SCHEMA.length}">
+        <span class="twisty">${collapsed ? "▶" : "▼"}</span>
+        <span class="gTitle">${escapeHtml(label)}</span>
+        <span class="gMeta">${escapeHtml(sum)}</span>
+      </td>
+    </tr>`);
+
+    if(collapsed) continue;
+
+    for(const r of arr){
+      const d = shotDerived.get(r.id) || {band:"good", chipsHTML:""};
+      if(!shotPassesFilter(r,d)) continue;
+
+      const isS = !!r.is_sighter;
+      const cls = isS ? "rowSighter" : (d.band==="bad" ? "rowBad" : d.band==="problem" ? "rowProblem" : d.band==="watch" ? "rowWatch" : "rowGood");
+
+      // flags cell HTML
+      const flagsHTML = d.chipsHTML ? `<div class="chips">${d.chipsHTML}</div>` : "";
+      r.__flags = flagsHTML;
+
+      rows.push(`<tr class="${cls}" data-shotid="${escapeHtml(r.id||"")}">
+        ${SCHEMA.map(c=>{
+          if(c.key==="__flags") return `<td>${flagsHTML}</td>`;
+          const v = (r[c.key]);
+          return `<td>${escapeHtml(fmtCell(c.key, v))}</td>`;
+        }).join("")}
+      </tr>`);
+      shown++;
+    }
+  }
+
+  if(tbody) tbody.innerHTML = rows.join("");
+
+  // wire group toggles
+  if(tbody){
+    tbody.querySelectorAll("tr.groupRow").forEach(gr=>{
+      gr.addEventListener("click", ()=>{
+        const sid = gr.getAttribute("data-sid");
+        if(!sid) return;
+        if(!state.collapsedStrings) state.collapsedStrings = new Set();
+        if(state.collapsedStrings.has(sid)) state.collapsedStrings.delete(sid);
+        else state.collapsedStrings.add(sid);
+        render();
+      });
+    });
+  }
+
+
+  const pillShown = $("pillShown");
+  if(pillShown) pillShown.textContent = `Shown: ${shown}`;
+}
+
+
+function wireUI(){
+  // imports
+  const fileSM = document.getElementById("fileSM");
+  const fileGarmin = document.getElementById("fileGarmin");
+  const fileAMP = document.getElementById("fileAMP");
+  const fileJSON = document.getElementById("fileJSON");
+
+  if(fileSM){
+    fileSM.addEventListener("change", async (e)=>{
+      const f = e.target.files?.[0]; if(!f) return;
+      await importShotMarkerCSV(f);
+      render();
+    });
+  }
+  if(fileGarmin){
+    fileGarmin.addEventListener("change", async (e)=>{
+      const files = Array.from(e.target.files||[]);
+      for(const f of files){ await importGarminFile(f); }
+      render();
+    });
+  }
+  if(fileAMP){
+    fileAMP.addEventListener("change", async (e)=>{
+      const f = e.target.files?.[0]; if(!f) return;
+      await importAMPCSV(f);
+      render();
+    });
+  }
+  if(fileJSON){
+    fileJSON.addEventListener("change", async (e)=>{
+      const f = e.target.files?.[0]; if(!f) return;
+      await importJSON(f);
+      render();
+    });
+  }
+
+  const btnSample = document.getElementById("btnSample");
+  if(btnSample) btnSample.addEventListener("click", async ()=>{ await loadSample(); render(); });
+
+  const btnExport = document.getElementById("btnExportJSON");
+  if(btnExport) btnExport.addEventListener("click", ()=> exportJSON());
+
+  // manual inputs
+  const btnApplySelected = document.getElementById("btnApplySelected");
+  const selApplyString = document.getElementById("applyStringSel");
+  const btnApplyString = document.getElementById("btnApplyString");
+  const btnClearSel = document.getElementById("btnClearSelected") || document.getElementById("btnClearSel");
+  const btnClearFields = document.getElementById("btnClearFields");
+  const btnClearThese = document.getElementById("btnClearSelectedFields");
+
+  function getManualValues(){
+    const primer = document.getElementById("inpPrimer")?.value?.trim();
+    const w0 = document.getElementById("inpWindZero")?.value?.trim();
+    const e0 = document.getElementById("inpElevZero")?.value?.trim();
+    const wcall = document.getElementById("inpWindCall")?.value?.trim();
+    const notes = document.getElementById("inpNotes")?.value ?? "";
+    const out = {};
+    if(primer) out.primer_seat_in = Number(primer);
+    if(w0) out.wind_zero_delta_moa = Number(w0);
+    if(e0) out.elev_zero_delta_moa = Number(e0);
+    if(wcall) out.wind_call = wcall;
+    if(notes && notes.trim()) out.notes = notes.trim();
+    return out;
+  }
+
+  function applyFieldsToShot(shot, fields){
+    for(const k of Object.keys(fields)) shot[k]=fields[k];
+  }
+
+  function applyToShots(shotList){
+    const fields = getManualValues();
+    if(!Object.keys(fields).length) return;
+    for(const s of shotList){ applyFieldsToShot(s, fields); }
+  }
+
+  if(btnApplySelected){
+    btnApplySelected.addEventListener("click", ()=>{
+      const selected = state.shots.filter(s=>state.selectedShotIds.has(s.shot_id));
+      applyToShots(selected);
+      render();
+    });
+  }
+  if(btnApplyString){
+    btnApplyString.addEventListener("click", ()=>{
+      const sid = selApplyString?.value;
+      if(!sid) return;
+      const list = state.shots.filter(s=>s.string_id===sid);
+      applyToShots(list);
+      render();
+    });
+  }
+  if(btnClearSel){
+    btnClearSel.addEventListener("click", ()=>{
+      state.selectedShotIds.clear();
+      updateSelectionUI();
+      render();
+    });
+  }
+  if(btnClearFields){
+    btnClearFields.addEventListener("click", ()=>{
+      ["inpPrimer","inpWindZero","inpElevZero","inpWindCall","inpNotes"].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.value="";
+      });
+    });
+  }
+  if(btnClearThese){
+    btnClearThese.addEventListener("click", ()=>{
+      const ids = Array.from(state.selectedShotIds);
+      const fields = getManualValues();
+      if(!ids.length || !Object.keys(fields).length) return;
+      const keys = Object.keys(fields);
+      for(const s of state.shots){
+        if(!state.selectedShotIds.has(s.shot_id)) continue;
+        for(const k of keys) delete s[k];
+      }
+      render();
+    });
+  }
+
+  // manual rollup
+  const btnToggleManual = document.getElementById("btnToggleManual");
+  const manualBody = document.getElementById("manualBody");
+  if(btnToggleManual && manualBody){
+    btnToggleManual.addEventListener("click", ()=>{
+      manualBody.classList.toggle("collapsed");
+      btnToggleManual.textContent = manualBody.classList.contains("collapsed") ? "Roll down" : "Roll up";
+    });
+  }
+
+  // show/hide sighters + filter
+  const btnToggleSighters = document.getElementById("btnToggleSighters");
+  if(btnToggleSighters){
+    btnToggleSighters.addEventListener("click", ()=>{
+      state.showSighters = !state.showSighters;
+      btnToggleSighters.textContent = state.showSighters ? "Hide sighters" : "Show sighters";
+      render();
+    });
+  }
+  const flagFilter = document.getElementById("flagFilter");
+  if(flagFilter){
+    flagFilter.addEventListener("change", ()=>{
+      state.flagFilter = flagFilter.value;
+      render();
+    });
+  }
+
+  // pairing dropdowns (if present)
+  const pairingWrap = document.getElementById("pairingWrap");
+  if(pairingWrap){
+    pairingWrap.addEventListener("change", (e)=>{
+      const sel = e.target;
+      if(sel && sel.matches("select[data-smid]")){
+        const smid = sel.getAttribute("data-smid");
+        const chronoId = sel.value || null;
+        state.pairings = state.pairings || {};
+        state.pairings[smid] = chronoId;
+        render();
+      }
+    });
+  }
+
+  render();
+}
+
+
+wireUI();
+// Sync horizontal scroll between table and floating header
+(function(){
+  const ts = document.getElementById('tableScroll');
+  const fs = document.getElementById('floatHeaderScroll');
+  if(ts && fs){
+    ts.addEventListener('scroll', ()=>{ fs.scrollLeft = ts.scrollLeft; }, {passive:true});
+    fs.addEventListener('scroll', ()=>{ ts.scrollLeft = fs.scrollLeft; }, {passive:true});
+  }
+})();
+// Keep floating header in sync with table scrolling
+(function(){
+  const ts = document.getElementById('tableScroll');
+  if(ts){
+    ts.addEventListener('scroll', ()=>{ syncFloatingHeaderVisibility(); }, {passive:true});
+  }
+})();
+render();
+updateFloatingHeader();
+syncFloatingHeaderVisibility();
+
+/* ------------------------- Floating header ------------------------- */
+function updateFloatingHeader(){
+  const src = $("thead");
+  const dst = $("floatThead");
+  if(!src || !dst) return;
+  dst.innerHTML = src.innerHTML; // clone labels
+  // lock widths to match main table columns
+  const srcTh = src.querySelectorAll("th");
+  const dstTh = dst.querySelectorAll("th");
+  srcTh.forEach((th,i)=>{
+    const w = th.getBoundingClientRect().width;
+    if(dstTh[i]) dstTh[i].style.width = w + "px";
+  });
+}
+
+function syncFloatingHeaderVisibility(){
+  const fh = $("floatHeader");
+  const tableScroll = $("tableScroll");
+  const thead = $("thead");
+  if(!fh || !tableScroll || !thead) return;
+
+  // Keep the floating header visible whenever the shots table is on screen
+  // AND either:
+  //  - the user scrolled the table body (scrollTop > 0), or
+  //  - the real header has moved above the pinned zone (page scroll case)
+  const pinnedY = 56; // safe clearance below top UI
+  const wrapRect = tableScroll.getBoundingClientRect();
+  const headRect = thead.getBoundingClientRect();
+
+  const inView = (wrapRect.bottom > pinnedY) && (wrapRect.top < window.innerHeight - 40);
+  const tableScrolled = tableScroll.scrollTop > 0;
+  const headerGoneByPageScroll = headRect.top < pinnedY;
+
+  const show = inView && (tableScrolled || headerGoneByPageScroll);
+  fh.style.display = show ? "block" : "none";
+
+  // sync horizontal scroll position
+  const fhs = fh.querySelector(".inner");
+  if(fhs){
+    fhs.scrollLeft = tableScroll.scrollLeft;
+  }
+}
+
+window.addEventListener("scroll", ()=>{ syncFloatingHeaderVisibility(); }, {passive:true});
+window.addEventListener("resize", ()=>{ updateFloatingHeader(); syncFloatingHeaderVisibility(); });
+
+</script>
+
+<script>
+(function(){
+  function moveManualIntoImports(){
+    const imp = document.getElementById('importsCard');
+    const man = document.getElementById('manualCard');
+    if(!imp || !man) return;
+    // If already moved, skip
+    if(man.parentElement === imp) return;
+    man.classList.add('manualInImports');
+    imp.appendChild(man);
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', moveManualIntoImports, {once:true});
+  } else {
+    moveManualIntoImports();
+  }
+})();
+</script>
+
+</body>
+</html>
