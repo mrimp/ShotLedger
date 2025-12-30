@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>ShotLedger v1.5.15</title>
+<title>ShotLedger v1.6.15</title>
 <style>
   :root{
     --bg0:#070b12; --bg1:#0b1220; --card: rgba(10,18,32,.72);
@@ -71,6 +71,9 @@
   /* --- Phase 3 layout guardrails (prevent page-level horizontal overflow) --- */
   .grid, .leftCol, .rightCol, .tableCard, .tableWrap{min-width:0;}
   .tableWrap{width:100%; max-width:100%;}
+  /* Extra breathing room below the chart area (if present) */
+  #shotChart, .shotChart{margin-bottom:10px;}
+
   /* When Kestrel panel is hidden, let the left pane span full width */
   .grid.fullWidth{grid-template-columns: 1fr !important;}
   .grid.fullWidth .leftCol{grid-column: 1 / -1;}
@@ -97,6 +100,19 @@
     font-size: 14px;
   }
   select{appearance:auto;}
+  textarea{
+    width:100%;
+    background-color: var(--pill);
+    color: var(--txt);
+    border: 1px solid var(--stroke2);
+    border-radius: 12px;
+    padding: 10px 10px;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 120px;
+  }
+  textarea::placeholder{color: rgba(230,238,248,.45);}
+
   input:focus, select:focus{
     outline:none;
     border-color: rgba(77,163,255,.75);
@@ -117,7 +133,7 @@
   .tableCard{padding:0; overflow:hidden; margin-top:14px;}
   .tableHead{padding:14px 14px 10px; border-bottom:1px solid var(--stroke);}
   .tableWrap{
-    padding: 0 0 10px;
+    padding: 0 0 18px;
     overflow:auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
@@ -253,6 +269,11 @@
   .blockRow .stats{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;}
   .bchip{display:inline-flex; gap:6px; align-items:center; padding:3px 8px; border-radius:999px;
          border:1px solid rgba(140,170,210,.22); background: rgba(140,170,210,.06); color: rgba(230,238,248,.85); font-size:12px; font-weight:800;}
+
+  .bchip.join{font-variant-numeric: tabular-nums;}
+  .bchip.join.ok{background: rgba(37,235,186,.10); border-color: rgba(37,235,186,.30); color: rgba(175,255,235,.95);}
+  .bchip.join.warn{background: rgba(255,199,87,.10); border-color: rgba(255,199,87,.30); color: rgba(255,219,150,.95);}
+  .bchip.join.bad{background: rgba(255,107,107,.10); border-color: rgba(255,107,107,.30); color: rgba(255,160,160,.95);}
   .bchip.rec{border-color: rgba(61,220,151,.28); background: rgba(61,220,151,.08); color: rgba(61,220,151,.95);}
   .bchip.sgt{border-color: rgba(247,196,106,.30); background: rgba(247,196,106,.08); color: rgba(247,196,106,.95);}
   .bchip.exc{border-color: rgba(255,107,107,.34); background: rgba(255,107,107,.08); color: rgba(255,107,107,.95);}
@@ -449,11 +470,11 @@
     <div class="suiteHeader__left">
       <div class="suiteHeader__topline">
         <div class="suiteHeader__title">ShotLedger</div>
-        <div class="suiteHeader__pill">v1.5.15</div>
+        <div class="suiteHeader__pill">v1.6.15</div>
         <div class="suiteHeader__pill suiteHeader__pill--muted">standalone</div>
       </div>
       <div class="suiteHeader__tagline">
-        Built for 1000-yard reality: vertical is king; velocity is context.
+        Release gate: ShotMarker fix + UX polish + export validation. Built for 1000-yard reality: vertical is king; velocity is context.
       </div>
     </div>
     <div class="suiteHeader__right">
@@ -698,6 +719,7 @@
               <h2 style="margin:0;">Shot list (first 200)</h2>
               <div class="row" style="gap:8px; align-items:center;">
                 <button class="btn small ghost" id="btnDense" type="button" title="Toggle dense row spacing">Dense</button>
+                <button class="btn small ghost" id="btnResetView" type="button" title="Reset sort, density, and scroll">Reset</button>
               </div>
             </div>
             <div class="hint">Tip: click a column header to sort; scroll horizontally inside the table to see all Kestrel columns.</div>
@@ -1257,6 +1279,13 @@ function importFromJSON(txt, name){
       const count = (typeof gi === 'object' && gi && typeof gi.count==='number') ? gi.count : null;
       const p = document.createElement('div'); p.className='pill';
       p.innerHTML = `<span class="good">Garmin</span> <span style="opacity:.8;">•</span> <span style="opacity:.9;white-space:nowrap;max-width:520px;">${esc(name)}</span>${count!=null ? ` <span style="opacity:.7;">•</span> <span style="opacity:.85;">${count} shots</span>`:''}`;
+      importPills.appendChild(p);
+    }
+    // AMP (optional)
+    if(typeof ampSession !== 'undefined' && ampSession && ampSession.n){
+      const p = document.createElement('div'); p.className='pill';
+      const nm = ampSession.name ? ampSession.name : 'AMP';
+      p.innerHTML = `<span class="good">AMP</span> <span style="opacity:.8;">•</span> <span style="opacity:.9;white-space:nowrap;max-width:520px;">${esc(nm)}</span> <span style="opacity:.8;">•</span> <span style="opacity:.9;">${ampSession.n} traces</span>`;
       importPills.appendChild(p);
     }
   }
@@ -1981,8 +2010,14 @@ function joinPill(status){
     for(const t of parsed.traces) map.set(t.trace, t);
     ampSession = { name: file.name, map, stats: parsed.stats, n: parsed.traces.length };
     applyAMPToShots();
+    // refresh import pills so AMP shows as a pill like the other sources
+    try{
+      setPills((smShots && smShots.length ? 'ShotMarker loaded' : null),
+               (kSamples && kSamples.length ? (kMeta && kMeta.textContent ? kMeta.textContent : 'Kestrel loaded') : null),
+               (gFiles && gFiles.length ? gFiles.map(g=>({name:g.name,count:(g.shots?g.shots.length:0)})) : null));
+    }catch(_e){}
+
     render();
-    toast(`AMP loaded: ${parsed.traces.length} traces`);
   }
 
   function fmtAmp(n){
@@ -2316,9 +2351,9 @@ function velFlagForShot(sh){
     const z = (v - vs.mean) / sd;
     const az = Math.abs(z);
 
-    // thresholds: <=0.5 OK; 0.5–1.0 Warn; 1.0–1.5 Problem; >1.5 Red
+    // thresholds: <=0.5 OK; 0.5–1.0 Warn; 1.0–1.6 Problem; >1.6 Red
     let level='ok';
-    if(az > 1.5) level='bad';
+    if(az > 1.6) level='bad';
     else if(az > 1.0) level='problem';
     else if(az > 0.5) level='warn';
 
@@ -2331,7 +2366,7 @@ function velFlagForShot(sh){
     if(!f.text) return `<span class="flagchip off" title="${esc(f.why || 'No Δσ available.')}">—</span>`;
     const desc = (f.az<=0.3) ? 'basically on the node'
       : (f.az<=1.0) ? 'normal noise'
-      : (f.az<=1.5) ? 'eyebrow raise'
+      : (f.az<=1.6) ? 'eyebrow raise'
       : 'real outlier (candidate for exclusion)';
     const title =
 `Δ${f.text} — ${desc}
@@ -2624,7 +2659,7 @@ Click to toggle EXCLUDE.`;
   }
 
   const payload = {
-    version: '1.5.41',
+    version: '1.6.41',
     exportedAt: new Date().toISOString(),
     ui: {
       activeBlock: activeBlock || null,
@@ -2924,7 +2959,16 @@ function renderBlockRollups(){
 
       const countsLine = `${c.total} shots | ${c.rec} record | ${c.sgt} sighters | ${c.exc} excluded`;
 
-      items.push({block, c, isActive, vs, vLine, wLine, gLine, countsLine, distYd, distSrc});
+      // Join health (record shots only)
+      let gJoin = 0, kJoin = 0, aJoin = 0;
+      for(const sh of list){
+        if((sh.state||'RECORD')!=='RECORD') continue;
+        if(sh.gMapped) gJoin++;
+        if(sh.j==='JOIN') kJoin++;
+        if(sh.ampZ!=null && Number.isFinite(sh.ampZ)) aJoin++;
+      }
+
+      items.push({block, c, isActive, vs, vLine, wLine, gLine, countsLine, distYd, distSrc, gJoin, kJoin, aJoin});
     }
 
     // preserve original order from smBlocks when possible
@@ -2946,6 +2990,21 @@ function renderBlockRollups(){
         ? 'Distance from ShotMarker header'
         : (it.distSrc==='MAN' ? 'Manual distance override (double-click to reset)' : 'Default distance');
 
+      // Join health chips (record shots only) — show at-a-glance mapping coverage
+      let joinHtml = '';
+      if(it.c && it.c.rec){
+        const gJoin = it.gJoin||0, kJoin = it.kJoin||0, aJoin = it.aJoin||0;
+        const gPct = Math.round(100*gJoin/it.c.rec);
+        const kPct = Math.round(100*kJoin/it.c.rec);
+        const aPct = Math.round(100*aJoin/it.c.rec);
+        const clsFor = (pct)=> (pct>=90 ? 'ok' : (pct>=50 ? 'warn' : 'bad'));
+        joinHtml += `<span class="bchip join ${clsFor(gPct)}" title="Garmin joined on record shots">G ${gJoin}/${it.c.rec}</span>`;
+        joinHtml += `<span class="bchip join ${clsFor(kPct)}" title="Kestrel joined on record shots">K ${kJoin}/${it.c.rec}</span>`;
+        if(typeof ampSession!=='undefined' && ampSession && ampSession.n){
+          joinHtml += `<span class="bchip join ${clsFor(aPct)}" title="AMP traces mapped on record shots">A ${aJoin}/${it.c.rec}</span>`;
+        }
+      }
+
       return `<div class="blockRow ${it.isActive?'active':''}" data-block="${esc(it.block)}" title="Click to filter table to this block">
         <div class="l">
           <div class="title">${esc(it.block)}</div>
@@ -2960,6 +3019,7 @@ function renderBlockRollups(){
           <span class="bchip rec">R ${it.c.rec}</span>
           <span class="bchip sgt">S ${it.c.sgt}</span>
           <span class="bchip exc">✕ ${it.c.exc}</span>
+          ${joinHtml}
           <div class="chronoCtl ${showChronoCtl ? "" : "hidden"}" title="Pair this ShotMarker target to a chrono file (one file per target).">
             <select class="chronoSel" data-chrono="${esc(it.block)}">
               <option value="">— Chrono —</option>
@@ -3683,6 +3743,29 @@ el('fileSM').addEventListener('change', async (e)=>{
         const on = wrap.classList.contains('dense');
         btnDense.classList.toggle('active', on);
         btnDense.textContent = on ? 'Normal' : 'Dense';
+      });
+    }
+
+    const btnReset = el('btnResetView');
+    if(btnReset && wrap){
+      btnReset.addEventListener('click', ()=>{
+        // Reset sorting + density + scroll to sane defaults
+        tableSort = { key: 'idx', dir: 1 };
+        wrap.classList.remove('dense');
+        const on = wrap.classList.contains('dense');
+        btnDense.classList.toggle('active', on);
+        btnDense.textContent = on ? 'Normal' : 'Dense';
+
+        // Clear block filter (defaults to showing all)
+        activeBlock = null;
+
+        // updateBlockActiveUI() not needed; renderBlockRollups() refreshes active state
+        renderBlockRollups();
+
+        // Reset table view
+        renderTable();
+        updateSortIndicators();
+        try{ wrap.scrollLeft = 0; wrap.scrollTop = 0; }catch(e){}
       });
     }
 

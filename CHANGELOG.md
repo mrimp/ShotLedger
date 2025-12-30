@@ -1,14 +1,12 @@
 # Changelog
 
-## [1.0.0] - 2025-12-27
+## v1.6-FINAL — 2025-12-30
 ### Added
-- Rails-only ShotLedger v1.0 release (standalone single-file HTML).
-- Imports: ShotMarker CSV, Garmin Chrono CSV/XLS, AMP CSV.
-- Manual inputs panel (collapsed by default) docked under Imports.
-- Deterministic locked-threshold flagging + hover tooltips.
-- Target rollups with expand/collapse (collapsed by default).
-- Export/Import JSON snapshots.
-
+- Target-header **Join Health** chips (Garmin/Kestrel/AMP) based on record shots.
+- **Reset Defaults** control for table view (sort/density/filter/scroll).
+### Changed
+- AMP import status now displays as a pill (consistent with other sources).
+- Notes panel styling tuned for dark UI.
+- Added bottom padding for clearer chart/table separation.
 ### Fixed
-- Sticky/floating header behaviors during scrolling.
-- Flag rendering in table (pills in Flags column).
+- Removed stray AMP “loaded” status line after pill rendering.
