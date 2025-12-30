@@ -2,6 +2,9 @@
 
 Single-file, fully offline HTML app to merge **ShotMarker** targets with **chrono (Garmin)**, optional **Kestrel** weather logs, and optional **AMP** traces — then review shots, flags, and per-target summaries.
 
+Run it
+Live (GitHub Pages): https://mrimp.github.io/ShotLedger/
+
 ## Quick start
 1. Download the repo ZIP and unzip.
 2. Open `index.html` in a desktop browser (Chrome/Edge recommended).
