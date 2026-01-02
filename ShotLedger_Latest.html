@@ -1,10 +1,11 @@
 
+
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>ShotLedger v2.0.0</title>
+<title>ShotLedger v2.1.2</title>
 <style>
   :root{
     --bg0:#070b12; --bg1:#0b1220; --card: rgba(10,18,32,.72);
@@ -351,18 +352,51 @@
   th.sort-asc::after{content:'▲';}
   th.sort-desc::after{content:'▼';}
 
-  /* Sticky left columns (#, Block, State) */
+  /* Sticky left columns (Sel, #, Block, State) */
+  .tableWrap{
+    --colSel: 32px;
+    --colNum: 58px;
+    --colBlock: 220px;
+    --colState: 110px;
+  }
   th.sticky, td.sticky{
     position: sticky;
     background: rgba(9,15,26,.96);
     z-index: 3;
   }
   td.sticky{background: rgba(9,15,26,.70); z-index:1;}
-  th.sticky.c0, td.sticky.c0{left:0; min-width:44px; max-width:44px;}
-  th.sticky.c1, td.sticky.c1{left:44px; min-width:60px;}
-  th.sticky.c2, td.sticky.c2{left:104px; min-width:220px; max-width:260px;}
-  th.sticky.c3, td.sticky.c3{left:324px; min-width:110px;}
 
+  /* Sel (checkbox) column: keep it tight */
+  th.sticky.c0, td.sticky.c0{
+    left:0;
+    width: var(--colSel);
+    min-width: var(--colSel);
+    max-width: var(--colSel);
+    padding-left: 6px;
+    padding-right: 6px;
+    text-align:center;
+  }
+  .rowSel{
+    margin:0;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+  }
+
+  th.sticky.c1, td.sticky.c1{
+    left: var(--colSel);
+    width: var(--colNum);
+    min-width: var(--colNum);
+  }
+  th.sticky.c2, td.sticky.c2{
+    left: calc(var(--colSel) + var(--colNum));
+    min-width: var(--colBlock);
+    max-width:260px;
+  }
+  th.sticky.c3, td.sticky.c3{
+    left: calc(var(--colSel) + var(--colNum) + var(--colBlock));
+    min-width: var(--colState);
+  }
 
 /* --- Suite unified header (NodeLab-style) --- */
 .suiteHeader{
@@ -513,6 +547,54 @@
     content: none !important;
     display: none !important;
   }
+/* --- Phase 1-3: Import stepper + summary --- */
+.stepper{margin-top:10px; display:grid; grid-template-columns:1fr; gap:8px;}
+.step{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:10px 10px; border-radius:14px; border:1px solid rgba(140,170,210,.14); background: rgba(15,27,42,.35);}
+.step .left{min-width:0;}
+.step .t{font-weight:900;}
+.step .m{margin-top:2px; color: rgba(230,238,248,.72); font-size:12px;}
+.step .badge{flex-shrink:0; padding:6px 10px; border-radius:999px; border:1px solid rgba(140,170,210,.22); background: rgba(0,0,0,.12); font-weight:900; font-size:12px;}
+.badge.good{color: var(--good); border-color: rgba(61,220,151,.35); background: rgba(61,220,151,.08);}
+.badge.warn{color: var(--warn); border-color: rgba(247,196,106,.35); background: rgba(247,196,106,.08);}
+.badge.off{color: rgba(230,238,248,.55);}
+.importSummary{margin-top:10px; padding:10px 12px; border-radius:14px; border:1px dashed rgba(140,170,210,.22); color: rgba(230,238,248,.78); background: rgba(0,0,0,.10); font-size:13px; line-height:1.25;}
+.importSummary b{color: rgba(230,238,248,.95);}
+/* Phase 0: Columns + layouts + table prefs */
+.btn.active{border-color: rgba(77,163,255,.65); box-shadow: 0 0 0 2px rgba(77,163,255,.12) inset;}
+.miniSelect{
+  appearance:none;
+  padding:6px 10px;
+  border-radius:12px;
+  border:1px solid rgba(140,170,210,25);
+  background: rgba(15,27,42,55);
+  color: rgba(230,238,248,92);
+  font-weight:800;
+  font-size:12px;
+  line-height:16px;
+  cursor:pointer;
+}
+.miniSelect:focus{outline:none; border-color: rgba(77,163,255,55); box-shadow: 0 0 0 2px rgba(77,163,255,12);}
+.colsGrid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+@media (max-width: 900px){ .colsGrid{grid-template-columns: repeat(2, minmax(0,1fr));} }
+@media (max-width: 620px){ .colsGrid{grid-template-columns: 1fr;} }
+.colItem{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid rgba(140,170,210,18);
+  background: rgba(9,15,26,35);
+}
+.colItem b{font-size:12px;}
+.colItem .hint{margin-left:auto;}
+.colItem.locked{opacity:.7;}
+.colItem input{transform: translateY(0.5px);}
+.modalCard .modalHead{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+.modalCard .modalFoot{display:flex; justify-content:flex-end; gap:10px; padding-top:12px;}
 </style>
 </head>
 <body>
@@ -522,7 +604,7 @@
     <div class="suiteHeader__left">
       <div class="suiteHeader__topline">
         <div class="suiteHeader__title">ShotLedger</div>
-        <div class="suiteHeader__pill">v2.0.0</div>
+        <div class="suiteHeader__pill">v2.1.2</div>
         <div class="suiteHeader__pill suiteHeader__pill--muted">standalone</div>
       </div>
       <div class="suiteHeader__tagline">
@@ -559,6 +641,8 @@
     </div>
     <div class="row" id="importPills"></div>
     <div class="status" id="importStatus"></div>
+    <div class="stepper" id="importStepper"></div>
+    <div class="importSummary" id="importSummary" style="display:none;"></div>
   </div>
 
   <div class="card" id="phase4ToolsCard">
@@ -611,7 +695,9 @@
         <div id="blocksChevron">▸</div>
       </div>
       <div class="rollupBody hidden" id="blocksBody">
-        <div class="row" style="justify-content:flex-end; margin-top:2px;">
+        <div class="row" style="justify-content:flex-end; margin-top:2px; gap:8px;">
+          <button class="btn small ghost" id="collapseAllBlocksBtn" type="button">Collapse all</button>
+          <button class="btn small ghost" id="expandAllBlocksBtn" type="button">Expand all</button>
           <button class="btn small ghost" id="clearBlockFilterBtn" type="button">Show all</button>
         </div>
       <div class="hint" id="blockHint">Load ShotMarker to see block rollups.</div>
@@ -769,8 +855,16 @@
         <div class="tableHead">
           <div class="panelTitle" style="margin:0;">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;">
-              <h2 style="margin:0;">Shot list (first 200)</h2>
+              <h2 style="margin:0;" id="shotListTitle">Shot list</h2>
               <div class="row" style="gap:8px; align-items:center;">
+                <button class="btn small ghost" id="btnCols" type="button" title="Column visibility + saved layouts">Columns</button>
+<select id="rowsLimitSel" class="miniSelect" title="Rows shown in All view">
+  <option value="200">200</option>
+  <option value="500">500</option>
+  <option value="1000">1000</option>
+  <option value="0">All</option>
+</select>
+<button class="btn small ghost" id="btnVirtual" type="button" title="Virtual scroll (flat list) for big shot lists">Virtual</button>
                 <button class="btn small ghost" id="btnDense" type="button" title="Toggle dense row spacing">Dense</button>
                 <button class="btn small ghost" id="btnPreview" type="button" title="Preview changes (what-if) before applying">Preview</button>
                 <button class="btn small ghost" id="btnResetView" type="button" title="Reset sort, density, and scroll">Reset</button>
@@ -791,39 +885,39 @@
             <thead>
               <tr>
                 <th class="sticky c0">Sel</th>
-                <th class="sticky c1" data-sort="idx">#</th>
-                <th class="sticky c2" data-sort="block">Block</th>
-                <th class="sticky c3" data-sort="state">State</th>
-                <th data-sort="relTime">Rel time</th>
-                <th>Tag</th>
-                <th data-sort="score">Score</th>
-                <th data-sort="vel">Vel</th>
-                <th data-sort="velSrc">Vel Src</th>
-      <th title="AMP Peak force (from AMP press).">AMP Peak</th>
-      <th title="AMP Work/area under force curve (consistency signal).">AMP Work</th>
-      <th title="AMP anomaly score: max(|z|) across Peak/Work/Start metrics.">AMP Δ(σ) <span class="hdrInfo" title="AMP Δ(σ) = max(|z|) across AMP Peak / Work / Start.&#10;Colors: ≤0.7σ node-solid • 0.7–1.3σ normal noise • 1.3–1.9σ eyebrow raise • ≥1.9σ real outlier.&#10;Hover each chip for per-metric z-scores.">ⓘ</span></th>
-                <th data-sort="dsigma" title="ΔVel (σ) = (shot velocity − block mean) / block SD (record shots only). Click chip to toggle Exclude.">ΔVel (σ) <span class="hdrInfo" title="ΔVel (σ) = |shot vel − string avg| / string SD using the active velocity source (Garmin if present else SM).&#10;≤0.7σ solid • 0.7–1.3σ normal noise • 1.3–1.9σ eyebrow raise • ≥1.9σ real outlier.">ⓘ</span></th>
-                <th data-sort="xIn">X (in)</th>
-                <th data-sort="yIn">Y (in)</th>
-                <th data-sort="hMoa">H (MOA)</th>
-                <th data-sort="vMoa">V (MOA)</th>
-                <th data-sort="rMoa">R (MOA)</th>
-                <th data-sort="kTime">Kestrel time</th>
-                <th data-sort="join">Join</th>
-                <th data-sort="kdt">Δt (s)</th>
-                <th data-sort="crosswind">Crosswind</th>
-                <th data-sort="headwind">Headwind</th>
-                <th data-sort="windSpeed">Wind spd</th>
-                <th data-sort="trueDir">Dir (true)</th>
-                <th data-sort="temp">Temp</th>
-                <th data-sort="rh">RH</th>
-                <th data-sort="stationP">Station P</th>
-                <th data-sort="da">DA</th>
-                <th data-sort="primerSeat">Primer (in)</th>
-                <th data-sort="windZero">Wind0 Δ</th>
-                <th data-sort="elevZero">Elev0 Δ</th>
-                <th data-sort="windCall">Wind Call</th>
-                <th data-sort="notes">Notes</th>
+                <th data-col="idx" class="sticky c1" data-sort="idx">#</th>
+                <th data-col="block" class="sticky c2" data-sort="block">Block</th>
+                <th data-col="state" class="sticky c3" data-sort="state">State</th>
+                <th data-col="relTime" data-sort="relTime">Rel time</th>
+                <th data-col="tag">Tag</th>
+                <th data-col="score" data-sort="score">Score</th>
+                <th data-col="vel" data-sort="vel">Vel</th>
+                <th data-col="velSrc" data-sort="velSrc">Vel Src</th>
+      <th data-col="ampPeak" title="AMP Peak force (from AMP press).">AMP Peak</th>
+      <th data-col="ampWork" title="AMP Work/area under force curve (consistency signal).">AMP Work</th>
+      <th data-col="ampSigma" title="AMP anomaly score: max(|z|) across Peak/Work/Start metrics.">AMP Δ(σ) <span class="hdrInfo" title="AMP Δ(σ) = max(|z|) across AMP Peak / Work / Start.&#10;Colors: ≤0.7σ node-solid • 0.7–1.3σ normal noise • 1.3–1.9σ eyebrow raise • ≥1.9σ real outlier.&#10;Hover each chip for per-metric z-scores.">ⓘ</span></th>
+                <th data-col="dsigma" data-sort="dsigma" title="ΔVel (σ) = (shot velocity − block mean) / block SD (record shots only). Click chip to toggle Exclude.">ΔVel (σ) <span class="hdrInfo" title="ΔVel (σ) = |shot vel − string avg| / string SD using the active velocity source (Garmin if present else SM).&#10;≤0.7σ solid • 0.7–1.3σ normal noise • 1.3–1.9σ eyebrow raise • ≥1.9σ real outlier.">ⓘ</span></th>
+                <th data-col="xIn" data-sort="xIn">X (in)</th>
+                <th data-col="yIn" data-sort="yIn">Y (in)</th>
+                <th data-col="hMoa" data-sort="hMoa">H (MOA)</th>
+                <th data-col="vMoa" data-sort="vMoa">V (MOA)</th>
+                <th data-col="rMoa" data-sort="rMoa">R (MOA)</th>
+                <th data-col="kTime" data-sort="kTime">Kestrel time</th>
+                <th data-col="join" data-sort="join">Join</th>
+                <th data-col="kdt" data-sort="kdt">Δt (s)</th>
+                <th data-col="crosswind" data-sort="crosswind">Crosswind</th>
+                <th data-col="headwind" data-sort="headwind">Headwind</th>
+                <th data-col="windSpeed" data-sort="windSpeed">Wind spd</th>
+                <th data-col="trueDir" data-sort="trueDir">Dir (true)</th>
+                <th data-col="temp" data-sort="temp">Temp</th>
+                <th data-col="rh" data-sort="rh">RH</th>
+                <th data-col="stationP" data-sort="stationP">Station P</th>
+                <th data-col="da" data-sort="da">DA</th>
+                <th data-col="primerSeat" data-sort="primerSeat">Primer (in)</th>
+                <th data-col="windZero" data-sort="windZero">Wind0 Δ</th>
+                <th data-col="elevZero" data-sort="elevZero">Elev0 Δ</th>
+                <th data-col="windCall" data-sort="windCall">Wind Call</th>
+                <th data-col="notes" data-sort="notes">Notes</th>
               </tr>
             </thead>
             <tbody id="shotTbody"></tbody>
@@ -837,7 +931,23 @@
 </div>
 
 <script>
+
 (() => {
+  // ---------- app metadata (single source of truth) ----------
+  const APP = {
+    name: 'ShotLedger',
+    flavor: 'standalone',
+    version: '2.1.2',
+    schemaVersion: 2
+  };
+
+  function syncAppVersionUI(){
+    try{
+      const pill = document.querySelector('.suiteHeader__pill');
+      if(pill) pill.textContent = 'v' + APP.version;
+      document.title = `${APP.name} v${APP.version}`;
+    }catch(_e){}
+  }
   // ---------- state ----------
   // Phase 1: change awareness
   const dirtyShotIdxs = new Set();
@@ -878,30 +988,58 @@
     return false;
   }
 
-  function autoPairChronoByOrder(){
-    if(!smBlocks || !smBlocks.length) return;
-    if(!gFiles || !gFiles.length) return;
-    // Only auto-pair when counts line up 1:1.
-    if(gFiles.length !== smBlocks.length) return;
+  
+function autoPairChronoSmart(){
+  if(!smBlocks || !smBlocks.length) return;
+  if(!gFiles || !gFiles.length) return;
 
+  const groups = groupByBlock();
+  const used = new Set();
+
+  // Preserve any explicit user pairings, but mark as used.
+  for(const [blk, v] of chronoPair.entries()){
+    if(v && v.name) used.add(v.name);
+  }
+
+  // 1) Try exact shot-count matches (greedy).
+  for(const b of smBlocks){
+    const blk = b.label;
+    const cur = chronoPair.get(blk);
+    if(cur && cur.name) continue;
+
+    const scount = (groups.get(blk)||[]).length;
+    if(!scount) continue;
+
+    const match = (gFiles||[]).find(g => !used.has(g.name) && ((g.shots&&g.shots.length)||0) === scount);
+    if(match){
+      chronoPair.set(blk, {name: match.name, start: 1});
+      used.add(match.name);
+    }
+  }
+
+  // 2) Fallback to order when counts line up 1:1.
+  if(gFiles.length === smBlocks.length){
     for(let i=0;i<smBlocks.length;i++){
       const blk = smBlocks[i].label;
+      const cur = chronoPair.get(blk);
+      if(cur && cur.name) continue;
       const gf = gFiles[i];
-      if(!gf) continue;
-      if(!chronoPair.has(blk)){
+      if(gf && !used.has(gf.name)){
         chronoPair.set(blk, {name: gf.name, start: 1});
-      } else {
-        // preserve existing, but fill missing fields
-        const cur = chronoPair.get(blk) || {};
-        if(!cur.name) cur.name = gf.name;
-        if(!cur.start) cur.start = 1;
-        chronoPair.set(blk, cur);
+        used.add(gf.name);
       }
     }
-
-    // Pairing panel (SM strings ↔ chrono sources)
-    renderPairingPanel();
   }
+
+  // Refresh pairing UI (SM strings ↔ chrono sources)
+  renderPairingPanel();
+}
+
+function autoPairChronoByOrder(){
+  // Back-compat: keep the old name, but use smarter pairing.
+  autoPairChronoSmart();
+}
+
 
   // ---------- Phase 5.1: geometry (MOA + dispersion) ----------
   let defaultDistYd = 1000;
@@ -913,7 +1051,363 @@
   let ampSession = null; // {name, map: Map(traceNum->obj), stats}
   let undo = null;     // {shotIdx, prevState}
   let blockStats = new Map();
-  let tableSort = { key: 'idx', dir: 1 }; // Phase 5.4.4
+  
+let tableSort = { key: 'idx', dir: 1 }; // Phase 5.4.4
+
+// ---------- Phase 0/4/5: table prefs + column layouts + (optional) virtual All view ----------
+const TABLE_PREFS_KEY = 'ShotLedger.tablePrefs';
+const TABLE_LAYOUTS_KEY = 'ShotLedger.tableLayouts';
+
+const TABLE_COLS = [
+  {key:'sel', label:'Sel', locked:true},
+  {key:'idx', label:'#', locked:true},
+  {key:'block', label:'Block', locked:true},
+  {key:'state', label:'State', locked:true},
+  {key:'relTime', label:'Rel time'},
+  {key:'tag', label:'Tag'},
+  {key:'score', label:'Score'},
+  {key:'vel', label:'Vel'},
+  {key:'velSrc', label:'Vel Src'},
+  {key:'ampPeak', label:'AMP Peak'},
+  {key:'ampWork', label:'AMP Work'},
+  {key:'ampSigma', label:'AMP Δ(σ)'},
+  {key:'dsigma', label:'ΔVel (σ)'},
+  {key:'xIn', label:'X (in)'},
+  {key:'yIn', label:'Y (in)'},
+  {key:'hMoa', label:'H (MOA)'},
+  {key:'vMoa', label:'V (MOA)'},
+  {key:'rMoa', label:'R (MOA)'},
+  {key:'kTime', label:'Kestrel time'},
+  {key:'join', label:'Join'},
+  {key:'kdt', label:'Δt (s)'},
+  {key:'crosswind', label:'Crosswind'},
+  {key:'headwind', label:'Headwind'},
+  {key:'windSpeed', label:'Wind spd'},
+  {key:'trueDir', label:'Dir (true)'},
+  {key:'temp', label:'Temp'},
+  {key:'rh', label:'RH'},
+  {key:'stationP', label:'Station P'},
+  {key:'da', label:'DA'},
+  {key:'primerSeat', label:'Primer (in)'},
+  {key:'windZero', label:'Wind0 Δ'},
+  {key:'elevZero', label:'Elev0 Δ'},
+  {key:'windCall', label:'Wind Call'},
+  {key:'notes', label:'Notes'}
+];
+
+const PRESET_LAYOUTS = {
+  "Full": TABLE_COLS.map(c=>c.key),
+  "Minimal": ['sel','idx','block','state','vel','dsigma','xIn','yIn','hMoa','vMoa','rMoa','join','kdt','crosswind','windSpeed','trueDir','temp','da','notes'],
+  "Environment": ['sel','idx','block','state','kTime','join','kdt','crosswind','headwind','windSpeed','trueDir','temp','rh','stationP','da','vel','velSrc','notes'],
+  "Diagnostics": ['sel','idx','block','state','relTime','tag','score','vel','velSrc','ampPeak','ampWork','ampSigma','dsigma','join','kdt','crosswind','windSpeed','trueDir','temp','da','primerSeat','windZero','elevZero','windCall','notes']
+};
+
+let tablePrefs = {
+  limit: 200,          // All view safety limit (0 = All)
+  useVirtual: false,   // Virtual scroll (flat All view)
+  visibleCols: null    // null = Full
+};
+
+function loadTablePrefs(){
+  try{
+    const raw = localStorage.getItem(TABLE_PREFS_KEY);
+    if(raw){
+      const o = JSON.parse(raw);
+      if(o && typeof o==='object'){
+        if(Number.isFinite(+o.limit)) tablePrefs.limit = +o.limit;
+        if(typeof o.useVirtual==='boolean') tablePrefs.useVirtual = o.useVirtual;
+        if(Array.isArray(o.visibleCols)) tablePrefs.visibleCols = o.visibleCols.slice(0);
+      }
+    }
+  }catch(_e){}
+  tablePrefs.visibleCols = normalizeVisibleCols(tablePrefs.visibleCols);
+}
+
+function saveTablePrefs(){
+  try{
+    localStorage.setItem(TABLE_PREFS_KEY, JSON.stringify({
+      limit: tablePrefs.limit,
+      useVirtual: !!tablePrefs.useVirtual,
+      visibleCols: tablePrefs.visibleCols
+    }));
+  }catch(_e){}
+}
+
+function loadLayouts(){
+  try{
+    const raw = localStorage.getItem(TABLE_LAYOUTS_KEY);
+    if(raw){
+      const o = JSON.parse(raw);
+      if(o && typeof o==='object') return o;
+    }
+  }catch(_e){}
+  return {};
+}
+
+function saveLayouts(o){
+  try{ localStorage.setItem(TABLE_LAYOUTS_KEY, JSON.stringify(o||{})); }catch(_e){}
+}
+
+function normalizeVisibleCols(cols){
+  const all = TABLE_COLS.map(c=>c.key);
+  const locked = TABLE_COLS.filter(c=>c.locked).map(c=>c.key);
+  if(!Array.isArray(cols) || !cols.length) cols = all.slice(0);
+  const set = new Set(cols.filter(k=>all.includes(k)));
+  for(const k of locked) set.add(k);
+  return all.filter(k=>set.has(k)); // stable order
+}
+
+function getHeaderColIndexMap(){
+  const ths = document.querySelectorAll('#shotTable thead th');
+  const map = new Map();
+  ths.forEach((th, i)=>{
+    const k = th.getAttribute('data-col') || th.getAttribute('data-sort') || '';
+    if(k) map.set(k, i);
+  });
+  return {ths, map};
+}
+
+function applyColumnVisibility(){
+  const {ths} = getHeaderColIndexMap();
+  const visible = new Set(normalizeVisibleCols(tablePrefs.visibleCols));
+  // header
+  ths.forEach(th=>{
+    const k = th.getAttribute('data-col') || '';
+    const def = TABLE_COLS.find(c=>c.key===k);
+    const lock = def && def.locked;
+    th.style.display = (lock || visible.has(k)) ? '' : 'none';
+  });
+  // body rows: hide cells by index. Skip group header/footer rows (single cell).
+  const tbody = el('shotTbody');
+  if(!tbody) return;
+  const rows = tbody.querySelectorAll('tr');
+  rows.forEach(tr=>{
+    const cells = tr.children;
+    if(!cells || cells.length < 5) return;
+    for(let i=0;i<ths.length && i<cells.length;i++){
+      const k = (ths[i] && ths[i].getAttribute('data-col')) ? ths[i].getAttribute('data-col') : '';
+      const def = TABLE_COLS.find(c=>c.key===k);
+      const lock = def && def.locked;
+      cells[i].style.display = (lock || visible.has(k)) ? '' : 'none';
+    }
+  });
+}
+
+function updateShotListTitle(){
+  const h = el('shotListTitle');
+  if(!h) return;
+  const total = smShots.length || 0;
+  if(activeBlock){
+    const n = smShots.filter(s=>s.block===activeBlock).length;
+    h.textContent = `Shot list (${n})`;
+  }else{
+    const lim = tablePrefs.limit;
+    if(lim===0){
+      h.textContent = tablePrefs.useVirtual ? `Shot list (all • virtual)` : `Shot list (all)`;
+    }else{
+      h.textContent = `Shot list (first ${lim})`;
+    }
+    if(total && total<=lim) h.textContent = `Shot list (${total})`;
+  }
+}
+
+// Virtual All view (flat list). Keeps the table markup but only renders the visible slice.
+let vRAF = 0;
+function renderVirtualAllView(tbody, wrap, buildRow, view){
+  const rowH = wrap.classList.contains('dense') ? 28 : 34;
+  const pad = 10;
+  const top = wrap.scrollTop || 0;
+  const vh = wrap.clientHeight || 520;
+  const start = Math.max(0, Math.floor(top/rowH) - pad);
+  const count = Math.ceil(vh/rowH) + pad*2;
+  const end = Math.min(view.length, start + count);
+
+  const topPx = start * rowH;
+  const botPx = Math.max(0, (view.length - end) * rowH);
+
+  const colCount = document.querySelectorAll('#shotTable thead th').length || 1;
+  const out = [];
+  if(topPx>0) out.push(`<tr class="vSpacer"><td colspan="${colCount}" style="height:${topPx}px;padding:0;border:0;"></td></tr>`);
+  for(let i=start;i<end;i++){
+    out.push(buildRow(view[i], (view[i].inBlock!=null ? view[i].inBlock : view[i].idx)));
+  }
+  if(botPx>0) out.push(`<tr class="vSpacer"><td colspan="${colCount}" style="height:${botPx}px;padding:0;border:0;"></td></tr>`);
+
+  const tmp = document.createElement('tbody');
+  tmp.innerHTML = out.join('') || `<tr><td colspan="${colCount}" style="color:rgba(230,238,248,.66); padding:16px;">Load ShotMarker CSV to see shots.</td></tr>`;
+  tbody.replaceChildren(...tmp.children);
+}
+
+function wireVirtualScroll(){
+  const wrap = el('tableWrap');
+  if(!wrap) return;
+  wrap.addEventListener('scroll', ()=>{
+    if(!tablePrefs.useVirtual || activeBlock) return;
+    if(tablePrefs.limit!==0) return; // only meaningful in "All"
+    if(vRAF) return;
+    vRAF = requestAnimationFrame(()=>{
+      vRAF = 0;
+      try{ renderTable(); }catch(_e){}
+    });
+  }, {passive:true});
+}
+
+// Columns modal (wired lazily because markup is after the script tag)
+function openColsModal(){
+  const modal = el('colsModal');
+  if(!modal) return;
+  modal.classList.remove('hidden');
+
+  const grid = el('colsGrid');
+  const presetSel = el('colsPresetSel');
+  const savedSel = el('colsSavedSel');
+  const layouts = loadLayouts();
+
+  // Build selects
+  if(presetSel && !presetSel.dataset.wired){
+    presetSel.innerHTML = Object.keys(PRESET_LAYOUTS).map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    presetSel.dataset.wired = '1';
+  }
+  if(savedSel){
+    const names = Object.keys(layouts||{}).sort((a,b)=>a.localeCompare(b));
+    savedSel.innerHTML = `<option value="">(none)</option>` + names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  }
+
+  // Working copy
+  let working = new Set(normalizeVisibleCols(tablePrefs.visibleCols));
+
+  function renderGrid(){
+    if(!grid) return;
+    grid.innerHTML = '';
+    for(const c of TABLE_COLS){
+      const item = document.createElement('div');
+      item.className = 'colItem' + (c.locked ? ' locked' : '');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = working.has(c.key);
+      cb.disabled = !!c.locked;
+      cb.addEventListener('change', ()=>{
+        if(cb.checked) working.add(c.key);
+        else working.delete(c.key);
+      });
+      const lab = document.createElement('b');
+      lab.textContent = c.label;
+      const k = document.createElement('div');
+      k.className = 'hint';
+      k.textContent = c.key;
+      item.appendChild(cb);
+      item.appendChild(lab);
+      item.appendChild(k);
+      grid.appendChild(item);
+    }
+  }
+  renderGrid();
+
+  const btnApply = el('btnColsApply');
+  const btnCancel = el('btnColsCancel');
+  const btnClose = el('btnColsClose');
+  const btnReset = el('btnColsReset');
+  const btnSave = el('btnColsSave');
+
+  const close = ()=> modal.classList.add('hidden');
+
+  if(btnClose && !btnClose.dataset.wired){
+    btnClose.addEventListener('click', close);
+    btnClose.dataset.wired='1';
+  }
+  if(btnCancel && !btnCancel.dataset.wired){
+    btnCancel.addEventListener('click', close);
+    btnCancel.dataset.wired='1';
+  }
+  if(btnReset && !btnReset.dataset.wired){
+    btnReset.addEventListener('click', ()=>{
+      working = new Set(PRESET_LAYOUTS.Full);
+      renderGrid();
+    });
+    btnReset.dataset.wired='1';
+  }
+  if(presetSel && !presetSel.dataset.wired2){
+    presetSel.addEventListener('change', ()=>{
+      const nm = presetSel.value;
+      if(PRESET_LAYOUTS[nm]){
+        working = new Set(normalizeVisibleCols(PRESET_LAYOUTS[nm]));
+        renderGrid();
+      }
+    });
+    presetSel.dataset.wired2='1';
+  }
+  if(savedSel && !savedSel.dataset.wired){
+    savedSel.addEventListener('change', ()=>{
+      const nm = savedSel.value;
+      if(nm && layouts[nm] && Array.isArray(layouts[nm])){
+        working = new Set(normalizeVisibleCols(layouts[nm]));
+        renderGrid();
+      }
+    });
+    savedSel.dataset.wired='1';
+  }
+  if(btnSave && !btnSave.dataset.wired){
+    btnSave.addEventListener('click', ()=>{
+      const nm = prompt('Save layout as (name):', 'My layout');
+      if(!nm) return;
+      const o = loadLayouts();
+      o[nm] = normalizeVisibleCols(Array.from(working));
+      saveLayouts(o);
+      // refresh list
+      if(savedSel){
+        const names = Object.keys(o||{}).sort((a,b)=>a.localeCompare(b));
+        savedSel.innerHTML = `<option value="">(none)</option>` + names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+        savedSel.value = nm;
+      }
+      toast(`Saved layout: ${nm}`);
+    });
+    btnSave.dataset.wired='1';
+  }
+  if(btnApply && !btnApply.dataset.wired){
+    btnApply.addEventListener('click', ()=>{
+      tablePrefs.visibleCols = normalizeVisibleCols(Array.from(working));
+      saveTablePrefs();
+      applyColumnVisibility();
+      close();
+    });
+    btnApply.dataset.wired='1';
+  }
+}
+
+function setupTablePrefsUI(){
+  loadTablePrefs();
+  const sel = el('rowsLimitSel');
+  if(sel){
+    sel.value = String(tablePrefs.limit);
+    sel.addEventListener('change', ()=>{
+      const v = Number(sel.value);
+      tablePrefs.limit = Number.isFinite(v) ? v : 200;
+      if(tablePrefs.limit===0 && smShots.length>1200) tablePrefs.useVirtual = true; // safety
+      saveTablePrefs();
+      updateShotListTitle();
+      renderTable();
+    });
+  }
+  const btnV = el('btnVirtual');
+  if(btnV){
+    btnV.classList.toggle('active', !!tablePrefs.useVirtual);
+    btnV.addEventListener('click', ()=>{
+      tablePrefs.useVirtual = !tablePrefs.useVirtual;
+      if(tablePrefs.useVirtual && tablePrefs.limit!==0) tablePrefs.limit = 0; // "virtual" implies all
+      saveTablePrefs();
+      btnV.classList.toggle('active', !!tablePrefs.useVirtual);
+      updateShotListTitle();
+      renderTable();
+    });
+  }
+  const btnCols = el('btnCols');
+  if(btnCols){
+    btnCols.addEventListener('click', openColsModal);
+  }
+  wireVirtualScroll();
+}
+
+setupTablePrefsUI();
 
 
 
@@ -959,6 +1453,21 @@
     if(blocksMeta){ blocksMeta.textContent = 'Rollups, distance, filters'; blocksMeta.title=''; }
     if(el('blockHint')) el('blockHint').textContent = 'Load ShotMarker or JSON to see block rollups.';
     if(el('defaultDist')) el('defaultDist').value = defaultDistYd;
+
+// Phase 0 schema v2: restore table prefs (if present)
+try{
+  const t = (data.ui && data.ui.table) ? data.ui.table : null;
+  if(t){
+    if(Number.isFinite(+t.limit)) tablePrefs.limit = +t.limit;
+    if(typeof t.useVirtual==='boolean') tablePrefs.useVirtual = t.useVirtual;
+    if(Array.isArray(t.visibleCols)) tablePrefs.visibleCols = t.visibleCols.slice(0);
+    tablePrefs.visibleCols = normalizeVisibleCols(tablePrefs.visibleCols);
+    saveTablePrefs();
+    // sync controls if present
+    if(el('rowsLimitSel')) el('rowsLimitSel').value = String(tablePrefs.limit);
+    if(el('btnVirtual')) el('btnVirtual').classList.toggle('active', !!tablePrefs.useVirtual);
+  }
+}catch(_e){}
 
     renderGarminMapping();
     renderBlockRollups();
@@ -1062,11 +1571,7 @@
           chronoPair.delete(blk);
         }
         const res = smShots.length ? applyGarminToShots() : {matched:0, overrides:0, unmapped:0, extra:0};
-        recomputeBlockStats();
-        recomputeGeoStats();
-        renderBlockRollups();
-        renderTable();
-        renderPairingPanel();
+        recomputeAndRender();
 
         const st = el('gStatus');
         if(st){
@@ -1194,9 +1699,9 @@ function importFromJSON(txt, name){
     renderTable();
   }
 
-  const el = (id)=>document.getElementById(id);
+  function el(id){ return document.getElementById(id); }
 
-  // --- Minimal UI helpers (some builds call these) ---
+// --- Minimal UI helpers (some builds call these) ---
   function toast(msg){
     try{
       const s = el('importStatus') || el('kStatus') || el('manStatus');
@@ -1218,6 +1723,104 @@ function importFromJSON(txt, name){
     try{ renderSummaries && renderSummaries(); }catch(_e){}
     try{ renderTable && renderTable(); }catch(_e){}
   }
+
+
+// Phase 2: single recompute+render pipeline (keeps UI + stats in sync)
+function recomputeAndRender(opts){
+  const o = Object.assign({vel:true, geo:true, render:true, stepper:true}, opts||{});
+  try{ if(o.vel) recomputeBlockStats(); }catch(_e){}
+  try{ if(o.geo) recomputeGeoStats(); }catch(_e){}
+  try{ if(o.render) render(); }catch(_e){}
+  if(o.stepper){
+    try{ updateImportStepper(); }catch(_e){}
+    try{ updateImportSummary(); }catch(_e){}
+  }
+}
+
+function pairingSummary(){
+  const total = (smBlocks && smBlocks.length) ? smBlocks.length : 0;
+  if(!total) return {total:0, paired:0, unpaired:0, mismatched:0};
+  const groups = groupByBlock();
+  const byName = new Map((gFiles||[]).map(g=>[g.name, g]));
+  let paired=0, mismatched=0;
+  for(const b of smBlocks){
+    const blk = b.label;
+    const pair = chronoPair.get(blk);
+    if(!pair || !pair.name) continue;
+    paired++;
+    const gf = byName.get(pair.name);
+    const gcount = gf && gf.shots ? gf.shots.length : 0;
+    const scount = (groups.get(blk)||[]).length;
+    if(gcount && scount && gcount !== scount) mismatched++;
+  }
+  const unpaired = Math.max(0, total - paired);
+  return {total, paired, unpaired, mismatched};
+}
+
+function updateImportStepper(){
+  const host = el('importStepper');
+  if(!host) return;
+
+  const smOk = !!(smShots && smShots.length);
+  const gOk = !!(gFiles && gFiles.length);
+  const kOk = !!(kSamples && kSamples.length);
+  const aOk = !!(ampSession && (ampSession.n||0));
+  const ps = pairingSummary();
+
+  const step1Badge = smOk ? `<span class="badge good">Loaded</span>` : `<span class="badge off">Missing</span>`;
+  const step1Msg = smOk ? `Shots: <b>${smShots.length}</b> • Blocks: <b>${smBlocks.length||0}</b>` : `Import a ShotMarker CSV (targets + shots).`;
+
+  let step2Cls = 'off', step2Txt='Optional';
+  if(gOk){
+    if(ps.unpaired || ps.mismatched){ step2Cls='warn'; step2Txt='Check pairing'; }
+    else { step2Cls='good'; step2Txt='Ready'; }
+  }
+  const step2Badge = `<span class="badge ${step2Cls}">${step2Txt}</span>`;
+  const step2Msg = gOk
+    ? `Garmin files: <b>${gFiles.length}</b> • Paired: <b>${ps.paired}/${ps.total}</b>${ps.mismatched?` • Mismatch: <b>${ps.mismatched}</b>`:''}`
+    : `Load chrono/Garmin CSVs (1 per target) to override velocities.`;
+
+  let step3Cls = (kOk||aOk) ? 'good' : 'off';
+  let step3Txt = (kOk||aOk) ? 'Loaded' : 'Optional';
+  const step3Badge = `<span class="badge ${step3Cls}">${step3Txt}</span>`;
+  const step3Msg = (kOk||aOk)
+    ? `${kOk?`Kestrel samples: <b>${kSamples.length}</b>`:'Kestrel not loaded'}${(kOk&&aOk)?' • ':''}${aOk?`AMP traces: <b>${ampSession.n}</b>`:'AMP not loaded'}`
+    : `Load Kestrel/AMP if you want per-shot environment / anomalies.`;
+
+  host.innerHTML = `
+    <div class="step">
+      <div class="left"><div class="t">1) ShotMarker</div><div class="m">${step1Msg}</div></div>
+      ${step1Badge}
+    </div>
+    <div class="step">
+      <div class="left"><div class="t">2) Chrono pairing</div><div class="m">${step2Msg}</div></div>
+      ${step2Badge}
+    </div>
+    <div class="step">
+      <div class="left"><div class="t">3) Kestrel / AMP</div><div class="m">${step3Msg}</div></div>
+      ${step3Badge}
+    </div>
+  `;
+}
+
+function updateImportSummary(){
+  const box = el('importSummary');
+  if(!box) return;
+  const hasAnything = (smShots && smShots.length) || (gFiles && gFiles.length) || (kSamples && kSamples.length) || (ampSession && ampSession.n);
+  if(!hasAnything){ box.style.display='none'; box.innerHTML=''; return; }
+  const ps = pairingSummary();
+  const gTotal = (gFiles||[]).reduce((a,g)=>a+((g.shots&&g.shots.length)||0),0);
+  box.style.display='';
+  box.innerHTML = `
+    <div><b>Detected</b></div>
+    <div style="margin-top:6px;">
+      ${smShots.length?`• ShotMarker: <b>${smShots.length}</b> shots in <b>${smBlocks.length||0}</b> blocks<br>`:''}
+      ${gFiles.length?`• Garmin: <b>${gFiles.length}</b> files • <b>${gTotal}</b> total chrono shots • Paired <b>${ps.paired}/${ps.total}</b>${ps.mismatched?` • Mismatch <b>${ps.mismatched}</b>`:''}<br>`:''}
+      ${kSamples.length?`• Kestrel: <b>${kSamples.length}</b> samples${kRange?` • Range ${esc(kRange.minStr)}–${esc(kRange.maxStr)}`:''}<br>`:''}
+      ${(ampSession && ampSession.n)?`• AMP: <b>${ampSession.n}</b> traces<br>`:''}
+    </div>
+  `;
+}
 
   function updateSelPill(){
     const p = el('selCountPill');
@@ -1359,6 +1962,8 @@ function importFromJSON(txt, name){
       p.innerHTML = `<span class="good">AMP</span> <span style="opacity:.8;">•</span> <span style="opacity:.9;white-space:nowrap;max-width:520px;">${esc(nm)}</span> <span style="opacity:.8;">•</span> <span style="opacity:.9;">${ampSession.n} traces</span>`;
       importPills.appendChild(p);
     }
+    try{ updateImportStepper(); }catch(_e){}
+    try{ updateImportSummary(); }catch(_e){}
   }
 
   function esc(s){ return (s||'').replace(/[&<>"]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
@@ -1692,6 +2297,52 @@ function joinPill(status){
 
     return { blocks, shots };
   }
+
+// Phase 0: ShotMarker import diagnostics (better errors)
+function diagnoseShotMarker(text){
+  const raw = String(text||'');
+  const lines = raw.split(/\r?\n/).map(stripBOM);
+  const nonEmptyIdx = [];
+  for(let i=0;i<lines.length;i++){
+    if(lines[i] && lines[i].trim()) nonEmptyIdx.push(i);
+    if(nonEmptyIdx.length>=12) break;
+  }
+  const samples = nonEmptyIdx.map(i=>({i, line: lines[i]}));
+  const required = [
+    {k:'time', label:'Time'},
+    {k:'x', label:'X (mm)'},
+    {k:'y', label:'Y (mm)'},
+    {k:'vel', label:'Vel (fps)'}
+  ];
+
+  let best = {score:-1, i:-1, cols:[], missing:required.map(r=>r.label)};
+  const scanMax = Math.min(lines.length, 120);
+  for(let i=0;i<scanMax;i++){
+    const ln = lines[i];
+    if(!ln || !ln.trim()) continue;
+    const row = splitCSV(ln).map(x=>String(x||'').replace(/^"|"$/g,'').trim());
+    const low = row.map(c=>c.toLowerCase());
+    let score = 0;
+    const missing = [];
+    for(const r of required){
+      if(r.k==='time'){
+        if(low.some(c=>c==='time' || c.includes('time'))) score++; else missing.push(r.label);
+      }else if(r.k==='x'){
+        if(low.some(c=>c==='x' || (c.includes('x') && c.includes('mm')))) score++; else missing.push(r.label);
+      }else if(r.k==='y'){
+        if(low.some(c=>c==='y' || (c.includes('y') && c.includes('mm')))) score++; else missing.push(r.label);
+      }else if(r.k==='vel'){
+        if(low.some(c=>c.includes('vel') || (c.includes('v') && c.includes('fps')) || c.includes('speed'))) score++; else missing.push(r.label);
+      }
+    }
+    if(score > best.score){
+      best = {score, i, cols: row.slice(0,24), missing};
+      if(score===required.length) break;
+    }
+  }
+
+  return {samples, best};
+}
 
   // Robust CSV splitter for this simple case (handles quoted commas).
   function splitCSV(line){
@@ -2422,11 +3073,11 @@ function velFlagForShot(sh){
     const z = (v - vs.mean) / sd;
     const az = Math.abs(z);
 
-    // thresholds: <=0.5 OK; 0.5–1.0 Warn; 1.0–1.6 Problem; >1.6 Red
+    // thresholds (match tooltip + AMP): <=0.7 OK; 0.7–1.3 Warn; 1.3–1.9 Problem; >1.9 Red
     let level='ok';
-    if(az > 1.6) level='bad';
-    else if(az > 1.0) level='problem';
-    else if(az > 0.5) level='warn';
+    if(az > 1.9) level='bad';
+    else if(az > 1.3) level='problem';
+    else if(az > 0.7) level='warn';
 
     const text = `${az.toFixed(1)}σ`;
     return {level, text, z, az};
@@ -2435,9 +3086,9 @@ function velFlagForShot(sh){
   function flagCell(sh){
     const f = velFlagForShot(sh);
     if(!f.text) return `<span class="flagchip off" title="${esc(f.why || 'No Δσ available.')}">—</span>`;
-    const desc = (f.az<=0.3) ? 'basically on the node'
-      : (f.az<=1.0) ? 'normal noise'
-      : (f.az<=1.6) ? 'eyebrow raise'
+    const desc = (f.az<=0.1) ? 'basically on the node'
+      : (f.az<=0.7) ? 'normal noise'
+      : (f.az<=1.3) ? 'eyebrow raise'
       : 'real outlier (candidate for exclusion)';
     const title =
 `Δ${f.text} — ${desc}
@@ -2754,7 +3405,7 @@ function resetStatesInActiveBlock(){
     lines.push(row.map(csvCell).join(','));
   }
 
-  downloadBlob('ShotLedger_export.csv', 'text/csv;charset=utf-8', lines.join('\n'));
+  downloadBlob(`ShotLedger_v${APP.version}_export.csv`, 'text/csv;charset=utf-8', lines.join('\n'));
   el('importStatus').innerHTML = `<span class="good">Exported CSV (states + MOA + Δσ + distance authority).</span>`;
 }
 
@@ -2794,11 +3445,14 @@ function resetStatesInActiveBlock(){
   }
 
   const payload = {
-    version: '1.6.41',
+    version: APP.version,
+    schemaVersion: APP.schemaVersion,
+    app: { name: APP.name, flavor: APP.flavor },
     exportedAt: new Date().toISOString(),
     ui: {
       activeBlock: activeBlock || null,
       defaultDistYd: defaultDistYd,
+      table: { limit: (tablePrefs?tablePrefs.limit:200), useVirtual: (tablePrefs?!!tablePrefs.useVirtual:false), visibleCols: (tablePrefs?tablePrefs.visibleCols:null) },
       anchors: {
         sessionDate: el('sessionDate') ? el('sessionDate').value : '',
         aShot: el('aShot') ? Number(el('aShot').value) : null,
@@ -2863,143 +3517,10 @@ function resetStatesInActiveBlock(){
     })
   };
 
-  downloadBlob('ShotLedger_export.json', 'application/json;charset=utf-8', JSON.stringify(payload, null, 2));
+  downloadBlob(`ShotLedger_v${APP.version}_export.json`, 'application/json;charset=utf-8', JSON.stringify(payload, null, 2));
   el('importStatus').innerHTML = `<span class="good">Exported JSON (blocks + shots + distance authority + stats snapshots).</span>`;
 
 
-  // ---------- Phase 5.4.7: Clear + JSON Import ----------
-  function clearAll(){
-    smShots = [];
-    smBlocks = [];
-    activeBlock = null;
-    smFirstDate = null;
-
-    // reset distances
-    defaultDistYd = 1000;
-    blockDist.clear();
-    blockAutoDist.clear();
-    geoStats = new Map();
-    blockStats = new Map();
-
-    // reset kestrel
-    kSamples = [];
-    kRange = null;
-    if(kMeta) kMeta.textContent = 'No file loaded';
-
-    // reset garmin
-    gFiles = [];
-    undo = null;
-
-    // clear file inputs so re-select works
-    const fsm = el('fileSM'); if(fsm) fsm.value = '';
-    const fk  = el('fileK');  if(fk) fk.value = '';
-    const fg  = el('fileG');  if(fg) fg.value = '';
-    const fa  = el('fileAMP'); if(fa) fa.value = '';
-    const fj  = el('fileJSON'); if(fj) fj.value = '';
-
-    // UI resets
-    setPills(null, null, null);
-    if(importStatus) importStatus.innerHTML = `<span class="hint">Cleared. Import a ShotMarker CSV or JSON to begin.</span>`;
-    if(kStatus) kStatus.innerHTML = '';
-    if(blocksMeta){ blocksMeta.textContent = 'Rollups, distance, filters'; blocksMeta.title=''; }
-    if(el('blockHint')) el('blockHint').textContent = 'Load ShotMarker or JSON to see block rollups.';
-    if(el('defaultDist')) el('defaultDist').value = defaultDistYd;
-
-    renderGarminMapping();
-    renderBlockRollups();
-    renderTable();
-    if(el('importStatus')) el('importStatus').innerHTML = `<span class="good">Cleared.</span>`;
-  }
-
-  function importFromJSON(txt, name){
-    const data = JSON.parse(txt);
-
-    if(!data || !Array.isArray(data.shots)){
-      throw new Error('Invalid ShotLedger JSON (missing shots[]).');
-    }
-
-    // Clear first (but keep rollups collapsed state etc.)
-    smShots = [];
-    smBlocks = [];
-    activeBlock = (data.ui && data.ui.activeBlock) ? data.ui.activeBlock : null;
-
-    // UI defaults
-    defaultDistYd = (data.ui && Number.isFinite(+data.ui.defaultDistYd)) ? +data.ui.defaultDistYd : 1000;
-    if(el('defaultDist')) el('defaultDist').value = defaultDistYd;
-
-    // Restore distances per block
-    blockDist.clear();
-    blockAutoDist.clear();
-    if(Array.isArray(data.blocks)){
-      for(const b of data.blocks){
-        if(!b || !b.block) continue;
-        const dist = b.distance || {};
-        if(dist && Number.isFinite(+dist.manualYd) && +dist.manualYd>0){
-          blockDist.set(b.block, +dist.manualYd);
-        }
-        if(dist && Number.isFinite(+dist.shotMarkerYd) && +dist.shotMarkerYd>0){
-          blockAutoDist.set(b.block, +dist.shotMarkerYd);
-        }
-      }
-    }
-
-    // Restore shots
-    for(const s of data.shots){
-      if(!s) continue;
-      const sh = {
-        idx: Number(s.idx),
-        block: s.block || '(unknown)',
-        blockDate: s.blockDate || '',
-        relTime: s.relTime || '',
-        tag: s.tag || '',
-        score: s.score || '',
-        vel: (s.velSM!=null ? String(s.velSM) : (s.vel!=null ? String(s.vel) : '')),
-        velSM: (s.velSM!=null && Number.isFinite(+s.velSM)) ? +s.velSM : null,
-        velActive: (s.velActive!=null && Number.isFinite(+s.velActive)) ? +s.velActive : ((s.velSM!=null && Number.isFinite(+s.velSM)) ? +s.velSM : null),
-        velSrc: s.velSrc || 'SM',
-        // geometry
-        xIn: (s.xIn!=null && Number.isFinite(+s.xIn)) ? +s.xIn : null,
-        yIn: (s.yIn!=null && Number.isFinite(+s.yIn)) ? +s.yIn : null,
-        hMoa: (s.hMoa!=null && Number.isFinite(+s.hMoa)) ? +s.hMoa : null,
-        vMoa: (s.vMoa!=null && Number.isFinite(+s.vMoa)) ? +s.vMoa : null,
-        rMoa: (s.rMoa!=null && Number.isFinite(+s.rMoa)) ? +s.rMoa : null,
-        // state + provenance
-        state: s.state || 'RECORD',
-        stateSrc: s.stateSrc || '',
-        // kestrel (optional)
-        j: s.j || s.join || null,
-        kdt: (s.kdt!=null && Number.isFinite(+s.kdt)) ? +s.kdt : (s.dt!=null && Number.isFinite(+s.dt) ? +s.dt : null),
-        k: s.k || null
-      };
-      smShots.push(sh);
-    }
-
-    // Rebuild blocks list
-    const seen = new Map();
-    for(const sh of smShots){
-      if(!seen.has(sh.block)) seen.set(sh.block, {label: sh.block, dateStr: sh.blockDate || '', n: 0, distYdAuto: blockAutoDist.get(sh.block) || null});
-      seen.get(sh.block).n += 1;
-    }
-    smBlocks = Array.from(seen.values());
-
-    // Attempt to set first date (for Kestrel date helper)
-    smFirstDate = null;
-    for(const b of smBlocks){
-      const dt = parseSMDateStr(b.dateStr);
-      if(dt){ smFirstDate = dt; break; }
-    }
-
-    // Pills/status
-    setPills(name || 'ShotLedger JSON', (kSamples.length? (kMeta.textContent||'Kestrel loaded') : null),
-             (gFiles.length ? gFiles.map(g=>({name:g.name,count:(g.shots?g.shots.length:0)})) : null));
-    importStatus.innerHTML = `<span class="good">Imported JSON.</span> <span class="hint">Shots: <b>${smShots.length}</b> • Blocks: <b>${smBlocks.length}</b></span>`;
-
-    // Recompute derived stats to ensure everything is coherent (MOA will be recomputed if coords exist)
-    recomputeBlockStats();
-    recomputeGeoStats();
-    renderBlockRollups();
-    renderTable();
-  }
 }
 
   function csvCell(v){
@@ -3261,6 +3782,23 @@ function renderBlockRollups(){
       </tr>`;
     };
 
+
+// Virtual All view (flat list) – only when not filtered to a block.
+if(!activeBlock && tablePrefs && tablePrefs.useVirtual && (tablePrefs.limit===0) && el('tableWrap')){
+  const view = [...smShots].sort((a,b)=>{
+    const ab = String(a.block||''); const bb = String(b.block||'');
+    if(ab!==bb) return ab.localeCompare(bb);
+    return (a.inBlock||0) - (b.inBlock||0);
+  });
+  const wrap = el('tableWrap');
+  renderVirtualAllView(tbody, wrap, buildRow, view);
+  updateSelPill();
+  updateSortIndicators();
+  applyColumnVisibility();
+  updateShotListTitle();
+  return;
+}
+
     // Active block view keeps sorting behavior (click headers)
     if(activeBlock){
       let view = smShots.filter(s=>s.block===activeBlock);
@@ -3345,7 +3883,7 @@ try{ const sel = window.getSelection && window.getSelection(); if(sel && sel.rem
 
     const out = [];
     let shown = 0;
-    const LIMIT = 200;
+    const LIMIT = (tablePrefs && Number.isFinite(+tablePrefs.limit) && +tablePrefs.limit>0) ? +tablePrefs.limit : Infinity;
 
     for(const block of order){
       const list0 = groups.get(block);
@@ -3403,6 +3941,8 @@ try{ const sel = window.getSelection && window.getSelection(); if(sel && sel.rem
     if(btnPrevCancel){ btnPrevCancel.addEventListener('click', cancelPreview); }
 
     updateSortIndicators();
+    applyColumnVisibility();
+    updateShotListTitle();
   }
 
 
@@ -3449,6 +3989,19 @@ ${btxt}`;
 
 
   // ---------- UI wiring ----------
+
+
+const collapseAllBtn = el('collapseAllBlocksBtn');
+if(collapseAllBtn) collapseAllBtn.addEventListener('click', ()=>{
+  collapsedBlocks = new Set((smBlocks||[]).map(b=>b.label));
+  renderBlockRollups();
+});
+
+const expandAllBtn = el('expandAllBlocksBtn');
+if(expandAllBtn) expandAllBtn.addEventListener('click', ()=>{
+  collapsedBlocks = new Set();
+  renderBlockRollups();
+});
 
   el('clearBlockFilterBtn').addEventListener('click', ()=>{
     activeBlock = null;
@@ -3606,8 +4159,17 @@ el('fileSM').addEventListener('change', async (e)=>{
 
     importStatus.innerHTML = '';
     if(!smShots.length){
-      importStatus.innerHTML = `<span class="bad">ShotMarker parse: 0 shots found.</span> <span class="hint">Tip: export a ShotMarker <b>Archive CSV</b> (multi-target) or a <b>session CSV</b> that includes Time/Tags/X(mm)/Y(mm)/Vel.</span>`;
-    } else {
+  const diag = diagnoseShotMarker(text);
+  const sLines = (diag.samples||[]).map(o=>`<div style="margin-top:6px;"><span class="hint">L${o.i+1}:</span> <code style="white-space:normal; overflow-wrap:anywhere;">${esc(String(o.line||'').slice(0,220))}</code></div>`).join('');
+  const best = diag.best || {score:-1,i:-1,cols:[],missing:[]};
+  const cols = (best.cols && best.cols.length) ? best.cols.map(c=>`<span class="tagpill" style="margin-right:6px; margin-top:6px; display:inline-flex;">${esc(c)}</span>`).join('') : '';
+  const missing = (best.missing && best.missing.length) ? best.missing.map(esc).join(', ') : 'unknown';
+  importStatus.innerHTML = `<span class="bad">ShotMarker parse: 0 shots found.</span>
+    <div class="hint" style="margin-top:6px;">Expected a ShotMarker session CSV with columns like <b>Time</b>, <b>X(mm)</b>, <b>Y(mm)</b>, and <b>Vel (fps)</b>. Here’s what I can see:</div>
+    <div class="hint" style="margin-top:8px;"><b>Best header candidate:</b> line ${best.i>=0 ? (best.i+1) : '—'} • matched ${best.score}/4 • missing: <span class="warn">${missing}</span></div>
+    <div style="margin-top:8px;">${cols || `<span class="hint">(No header row detected in the first ~120 lines.)</span>`}</div>
+    <div class="hint" style="margin-top:10px;"><b>Sample lines:</b>${sLines}</div>`;
+} else {
       importStatus.innerHTML = `<span class="good">ShotMarker OK:</span> ${blocks.length} blocks • ${shots.length} shots flattened.`;
       renderTable();
       renderSummaries();
@@ -4055,6 +4617,8 @@ el('fileSM').addEventListener('change', async (e)=>{
   updateSelPill();
   }
 
+  try{ updateImportStepper(); }catch(_e){}
+  try{ updateImportSummary(); }catch(_e){}
   renderBlockRollups();
 })();
 </script>
@@ -4099,6 +4663,34 @@ el('fileSM').addEventListener('change', async (e)=>{
           <li>No single “magic score.” You stay in control.</li>
         </ul>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Columns & Layouts Modal (Phase 0) -->
+<div class="modal hidden" id="colsModal" role="dialog" aria-modal="true">
+  <div class="modalCard" style="max-width:920px;">
+    <div class="modalHead">
+      <div>
+        <b>Columns & Layouts</b>
+        <div class="hint">Hide/unhide columns, pick presets, and save layouts (stored in this browser).</div>
+      </div>
+      <button class="btn small ghost" id="btnColsClose" type="button">Close</button>
+    </div>
+    <div class="modalBody">
+      <div class="row" style="gap:10px; align-items:center; flex-wrap:wrap;">
+        <span class="hint">Preset</span>
+        <select id="colsPresetSel" class="miniSelect"></select>
+        <span class="hint">Saved</span>
+        <select id="colsSavedSel" class="miniSelect"></select>
+        <button class="btn small" id="btnColsSave" type="button">Save as…</button>
+        <button class="btn small ghost" id="btnColsReset" type="button">Reset to Full</button>
+      </div>
+      <div class="colsGrid" id="colsGrid"></div>
+    </div>
+    <div class="modalFoot">
+      <button class="btn small" id="btnColsApply" type="button">Apply</button>
+      <button class="btn small ghost" id="btnColsCancel" type="button">Cancel</button>
     </div>
   </div>
 </div>
