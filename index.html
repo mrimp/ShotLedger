@@ -1,11 +1,12 @@
 
 
+
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>ShotLedger v2.1.2</title>
+<title>ShotLedger v2.2.2</title>
 <style>
   :root{
     --bg0:#070b12; --bg1:#0b1220; --card: rgba(10,18,32,.72);
@@ -595,6 +596,128 @@
 .colItem input{transform: translateY(0.5px);}
 .modalCard .modalHead{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
 .modalCard .modalFoot{display:flex; justify-content:flex-end; gap:10px; padding-top:12px;}
+
+  /* v2.2.2 UX */
+  .nextActionBar{
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:10px 12px;
+    margin: 10px 0 12px;
+    border-radius: 18px;
+    border:1px solid var(--stroke2);
+    background: rgba(12,20,36,.78);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  }
+  .nextActionBar.hidden{display:none;}
+  .nextActionBar__left{display:flex; align-items:center; gap:10px; flex-wrap:wrap; min-width:0;}
+  .nextActionBar__title{font-weight:900; opacity:.85;}
+  .nextActionBar__steps{display:flex; gap:8px; flex-wrap:wrap;}
+  .stepChip{
+    padding:6px 10px; border-radius:999px;
+    border:1px solid var(--stroke2); background: rgba(15,27,42,.55);
+    font-weight:800; letter-spacing:.2px;
+  }
+  .stepChip.ok{border-color: rgba(61,220,151,.35); color: rgba(61,220,151,.95);}
+  .stepChip.warn{border-color: rgba(247,196,106,.35); color: rgba(247,196,106,.95);}
+  .stepChip.todo{opacity:.8;}
+  .nextActionBar__msg{
+    color: rgba(230,238,248,.78);
+    font-weight:700;
+    max-width: 520px;
+    white-space: nowrap;
+    overflow:hidden;
+    text-overflow: ellipsis;
+  }
+  .nextActionBar__right{display:flex; gap:8px; flex:0 0 auto;}
+
+  .filterBar{
+    margin-top:10px;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+    padding:10px 10px;
+    border-radius: 16px;
+    border:1px solid var(--stroke2);
+    background: rgba(10,18,32,.55);
+  }
+  .miniInput{
+    width: 240px;
+    max-width: 100%;
+    height: 36px !important;
+    max-height: 36px !important;
+    padding: 8px 10px !important;
+    border-radius: 12px !important;
+  }
+  .miniSelect{
+    width: auto;
+    min-width: 140px;
+    height: 36px !important;
+    max-height: 36px !important;
+    padding: 6px 10px !important;
+    border-radius: 12px !important;
+  }
+  .filterBar .chk{
+    display:flex; align-items:center; gap:8px;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid var(--stroke2);
+    background: rgba(15,27,42,.55);
+    color: rgba(230,238,248,.82);
+    font-weight:800;
+    font-size:12px;
+    letter-spacing:.2px;
+  }
+  .filterBar .chk input{width:auto; margin:0;}
+  .filterBar__spacer{flex:1 1 auto; min-width: 12px;}
+  .btnGroup{display:flex; gap:6px; align-items:center;}
+  .btnGroup .btn{min-width:34px; padding:8px 10px;}
+
+
+  /* --- v2.2.2: blue tooltips + filter help icon --- */
+  .infoIcon{
+    width:18px; height:18px; line-height:18px;
+    border-radius:999px;
+    display:inline-flex; align-items:center; justify-content:center;
+    border:1px solid rgba(140,170,210,.35);
+    background: rgba(77,163,255,.10);
+    color: rgba(230,238,248,.92);
+    font-weight:700;
+    font-size:12px;
+    padding:0;
+    cursor:pointer;
+    transform: translateY(-1px);
+  }
+  .infoIcon:hover{ background: rgba(77,163,255,.18); border-color: rgba(77,163,255,.45); }
+  .infoIcon:active{ transform: translateY(0px); }
+
+  #slBlueTip{
+    position:fixed;
+    left:0; top:0;
+    z-index:99999;
+    max-width:360px;
+    padding:8px 10px;
+    border-radius:10px;
+    background: linear-gradient(180deg, rgba(77,163,255,.95), rgba(54,132,232,.92));
+    border:1px solid rgba(255,255,255,.16);
+    box-shadow: 0 10px 26px rgba(0,0,0,.38);
+    color:#ffffff;
+    font-size:12px;
+    line-height:1.25;
+    pointer-events:none;
+    opacity:0;
+    transform: translate(12px, 12px);
+    transition: opacity .10s ease;
+    white-space:pre-wrap;
+  }
+  #slBlueTip.show{ opacity:1; }
+
 </style>
 </head>
 <body>
@@ -604,7 +727,7 @@
     <div class="suiteHeader__left">
       <div class="suiteHeader__topline">
         <div class="suiteHeader__title">ShotLedger</div>
-        <div class="suiteHeader__pill">v2.1.2</div>
+        <div class="suiteHeader__pill">v2.2.2</div>
         <div class="suiteHeader__pill suiteHeader__pill--muted">standalone</div>
       </div>
       <div class="suiteHeader__tagline">
@@ -613,7 +736,8 @@
     </div>
     <div class="suiteHeader__right">
       <button class="btn small" id="toggleRightBtn" type="button">Hide Kestrel panel</button>
-      <button class="btn small ghost" id="btnHelp" type="button" title="What is ShotLedger?">?</button>
+            <button class="btn small ghost" id="btnResetMenu" type="button" title="Reset options">Reset</button>
+<button class="btn small ghost" id="btnHelp" type="button" title="What is ShotLedger?">?</button>
       <div class="suiteHeader__badge" title="Suite mark">
         <img class="suiteHeader__badgeImg" alt="Target" src="data:image/jpeg;base64,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"/>
       </div>
@@ -621,7 +745,20 @@
   </header>
 
 
-  <div class="grid" id="grid">
+  
+  <div class="nextActionBar" id="nextActionBar">
+    <div class="nextActionBar__left">
+      <div class="nextActionBar__title">Next:</div>
+      <div class="nextActionBar__steps" id="nextActionSteps"></div>
+      <div class="nextActionBar__msg" id="nextActionMsg"></div>
+    </div>
+    <div class="nextActionBar__right">
+      <button class="btn small" id="btnNextDo" type="button">Continue</button>
+      <button class="btn small ghost" id="btnNextSkip" type="button" title="Hide until next reload">Dismiss</button>
+    </div>
+  </div>
+
+<div class="grid" id="grid">
     <div class="leftCol">
 <div class="card">
     <div class="panelTitle">
@@ -671,14 +808,47 @@
                 <div>
                   <b>Pairing</b>
                   <div class="meta" id="pairMetaLine">ShotMarker strings → Chrono sources</div>
-                </div>
+                
+            <div class="filterBar" id="filterBar">
+              <input id="filterSearch" class="miniInput" type="text" placeholder="Search notes/tag/block…" title="Filter by block, tag, notes, score"/>
+              <select id="filterBlockSel" class="miniSelect" title="Block filter">
+                <option value="">All blocks</option>
+              </select>
+              <label class="chk"><input type="checkbox" id="filterHideExcluded"/> Hide excluded</label>
+              <label class="chk"><input type="checkbox" id="filterOnlyIssues"/> Only issues</label>
+              <label class="chk"><input type="checkbox" id="filterOnlySighters"/> Only sighters</label>
+              <label class="chk"><input type="checkbox" id="filterMissingJoin"/> Missing joins</label>
+              
+              <button class="infoIcon" id="btnFilterHelp" type="button" data-tip="Filters & views
+
+• Search matches block/tag/notes/score.
+• Hide excluded hides ✕ rows.
+• Only issues shows rows with join misses, missing mappings, or dirty edits.
+• Missing joins shows Kestrel join misses.
+
+Click this ? to open Help at the Filters section.">?</button>
+<button class="btn small ghost" id="btnClearFilters" type="button" title="Clear filters">Clear</button>
+              <div class="filterBar__spacer"></div>
+              <div class="btnGroup" id="bulkStateGroup" title="Apply shot state to selected shots">
+                <button class="btn small ghost" id="btnBulkRecord" type="button">R</button>
+                <button class="btn small ghost" id="btnBulkSighter" type="button">S</button>
+                <button class="btn small ghost" id="btnBulkExclude" type="button">✕</button>
+              </div>
+            </div>
+</div>
                 <div id="pairChevron">▸</div>
               </div>
               <div class="rollupBody hidden" id="pairBody">
                 <div class="hint" style="margin-top:2px;">
                   If files were uploaded out of order, pick the chrono file that belongs to each ShotMarker string. (1:1 by shot index within the string.)
                 </div>
-                <div class="pairList" id="pairingList"></div>
+                
+                <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px;">
+                  <button class="btn small" id="btnAutoPair" type="button" title="Auto-pair ShotMarker strings to chrono files (smart)">Auto-pair</button>
+                  <button class="btn small ghost" id="btnClearPairings" type="button" title="Clear all pairings">Clear pairings</button>
+                  <span class="pill" id="pairingStatusPill" style="margin-left:auto; display:none;"></span>
+                </div>
+<div class="pairList" id="pairingList"></div>
               </div>
             </div>
           </div>
@@ -806,7 +976,22 @@
             <span class="pill" id="selCountPill">Selected: 0</span>
           </div>
 
-          <div style="margin-top:10px;">
+          
+          <div class="row" style="gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px;">
+            <div style="min-width:220px; flex:0 0 220px;">
+              <label style="margin:0 0 6px;">Bulk shot state</label>
+              <select id="manStateSel">
+                <option value="">(leave unchanged)</option>
+                <option value="RECORD">Record (R)</option>
+                <option value="SIGHTER">Sighter (S)</option>
+                <option value="EXCLUDE">Exclude (✕)</option>
+              </select>
+            </div>
+            <div class="hint" style="margin-top:20px; flex:1; min-width:240px;">
+              Tip: use keyboard shortcuts — <b>r</b>/<b>s</b>/<b>x</b> apply to selected shots, <b>?</b> opens Help.
+            </div>
+          </div>
+<div style="margin-top:10px;">
             <label>— Select string —</label>
             <select id="manBlockSel"></select>
           </div>
@@ -857,6 +1042,10 @@
             <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;">
               <h2 style="margin:0;" id="shotListTitle">Shot list</h2>
               <div class="row" style="gap:8px; align-items:center;">
+                
+<select id="layoutPresetSel" class="miniSelect" title="Quick column presets"></select>
+<button class="btn small ghost" id="btnApplyLayoutPreset" type="button" title="Apply selected preset">Apply</button>
+
                 <button class="btn small ghost" id="btnCols" type="button" title="Column visibility + saved layouts">Columns</button>
 <select id="rowsLimitSel" class="miniSelect" title="Rows shown in All view">
   <option value="200">200</option>
@@ -937,9 +1126,14 @@
   const APP = {
     name: 'ShotLedger',
     flavor: 'standalone',
-    version: '2.1.2',
+    version: '2.2.2',
     schemaVersion: 2
   };
+
+  // Release build flags
+  const SL_BUILD_DATE = '2026-01-03';
+  const SL_DEBUG = false;
+
 
   function syncAppVersionUI(){
     try{
@@ -1050,6 +1244,7 @@ function autoPairChronoByOrder(){
   let gFiles = [];    // [{name, shots:[{idx, vel, timeSec}], startIdx}]
   let ampSession = null; // {name, map: Map(traceNum->obj), stats}
   let undo = null;     // {shotIdx, prevState}
+  let bulkStateMode = false;
   let blockStats = new Map();
   
 let tableSort = { key: 'idx', dir: 1 }; // Phase 5.4.4
@@ -1097,9 +1292,18 @@ const TABLE_COLS = [
 
 const PRESET_LAYOUTS = {
   "Full": TABLE_COLS.map(c=>c.key),
-  "Minimal": ['sel','idx','block','state','vel','dsigma','xIn','yIn','hMoa','vMoa','rMoa','join','kdt','crosswind','windSpeed','trueDir','temp','da','notes'],
+
+  // Quick presets (surface these in the main toolbar)
+  "Essential": ['sel','idx','block','state','vel','velSrc','dsigma','xIn','yIn','hMoa','vMoa','rMoa','join','kTime','kdt','windSpeed','trueDir','temp','da','notes'],
+  "Chrono":    ['sel','idx','block','state','vel','velSrc','dsigma','ampPeak','ampWork','ampSigma','join','kTime','kdt','notes'],
+  "Wind":      ['sel','idx','block','state','kTime','join','kdt','crosswind','headwind','windSpeed','trueDir','temp','rh','stationP','da','vel','dsigma','notes'],
+  "AMP":       ['sel','idx','block','state','vel','velSrc','ampPeak','ampWork','ampSigma','dsigma','notes'],
+  "Geometry":  ['sel','idx','block','state','xIn','yIn','hMoa','vMoa','rMoa','vel','dsigma','notes'],
+
+  // Legacy presets (kept for compatibility)
+  "Minimal":     ['sel','idx','block','state','vel','dsigma','xIn','yIn','vMoa','join','kdt','windSpeed','temp','da'],
   "Environment": ['sel','idx','block','state','kTime','join','kdt','crosswind','headwind','windSpeed','trueDir','temp','rh','stationP','da','vel','velSrc','notes'],
-  "Diagnostics": ['sel','idx','block','state','relTime','tag','score','vel','velSrc','ampPeak','ampWork','ampSigma','dsigma','join','kdt','crosswind','windSpeed','trueDir','temp','da','primerSeat','windZero','elevZero','windCall','notes']
+  "Diagnostics": ['sel','idx','block','state','relTime','tag','score','vel','velSrc','ampPeak','ampWork','ampSigma','dsigma','kTime','join','kdt','temp','da','primerSeat','windZero','elevZero','windCall','notes']
 };
 
 let tablePrefs = {
@@ -1107,6 +1311,53 @@ let tablePrefs = {
   useVirtual: false,   // Virtual scroll (flat All view)
   visibleCols: null    // null = Full
 };
+
+// ---------- Filters / search ----------
+let filterState = {
+  q: '',
+  block: '',
+  hideExcluded: true,
+  onlyIssues: false,
+  onlySighters: false,
+  missingJoin: false
+};
+
+function shotHasIssue(sh){
+  const st = (sh.state||'RECORD');
+  if(st==='EXCLUDE') return true;
+  const j = String(sh.j||'').toUpperCase();
+  if(j==='MISS' || j==='BAD' || j==='BADMAP') return true;
+  if(gFiles && gFiles.length && !sh.gMapped) return true;
+  // Δσ flag "eyebrow raise" or worse
+  try{
+    const f = velFlagForShot(sh);
+    if(f && f.az!=null && f.az>=1.3) return true;
+  }catch(_e){}
+  return false;
+}
+
+function passesFilters(sh){
+  if(filterState.hideExcluded && (sh.state||'RECORD')==='EXCLUDE') return false;
+  if(filterState.onlySighters && (sh.state||'RECORD')!=='SIGHTER') return false;
+  if(filterState.missingJoin){
+    const j = String(sh.j||'').toUpperCase();
+    if(!(j==='MISS' || j==='BAD' || j==='BADMAP')) return false;
+  }
+  if(filterState.onlyIssues && !shotHasIssue(sh)) return false;
+  if(filterState.block){
+    if((sh.block||'') !== filterState.block) return false;
+  }
+  const q = (filterState.q||'').trim().toLowerCase();
+  if(q){
+    const hay = [
+      sh.block, sh.tag, sh.notes, sh.score, sh.relTime,
+      sh.gName, sh.velSrc, sh.stateSrc
+    ].filter(Boolean).join(' ').toLowerCase();
+    if(!hay.includes(q)) return false;
+  }
+  return true;
+}
+
 
 function loadTablePrefs(){
   try{
@@ -1193,23 +1444,32 @@ function applyColumnVisibility(){
   });
 }
 
+
 function updateShotListTitle(){
   const h = el('shotListTitle');
   if(!h) return;
   const total = smShots.length || 0;
+  const totalFiltered = smShots.filter(passesFilters).length;
+
   if(activeBlock){
-    const n = smShots.filter(s=>s.block===activeBlock).length;
-    h.textContent = `Shot list (${n})`;
+    const nAll = smShots.filter(s=>s.block===activeBlock).length;
+    const n = smShots.filter(s=>s.block===activeBlock && passesFilters(s)).length;
+    h.textContent = (n!==nAll) ? `Shot list (${n}/${nAll})` : `Shot list (${n})`;
+    return;
+  }
+
+  const lim = tablePrefs.limit;
+  if(lim===0){
+    const base = tablePrefs.useVirtual ? `Shot list (all • virtual)` : `Shot list (all)`;
+    h.textContent = (totalFiltered!==total) ? `${base} • ${totalFiltered}/${total}` : base;
   }else{
-    const lim = tablePrefs.limit;
-    if(lim===0){
-      h.textContent = tablePrefs.useVirtual ? `Shot list (all • virtual)` : `Shot list (all)`;
-    }else{
-      h.textContent = `Shot list (first ${lim})`;
-    }
-    if(total && total<=lim) h.textContent = `Shot list (${total})`;
+    // In grouped view, the LIMIT applies after grouping; show the user's limit but keep the true filtered count handy.
+    const base = `Shot list (first ${lim})`;
+    h.textContent = (totalFiltered!==total) ? `${base} • ${totalFiltered}/${total}` : base;
+    if(totalFiltered && totalFiltered<=lim) h.textContent = (totalFiltered!==total) ? `Shot list (${totalFiltered}/${total})` : `Shot list (${totalFiltered})`;
   }
 }
+
 
 // Virtual All view (flat list). Keeps the table markup but only renders the visible slice.
 let vRAF = 0;
@@ -1708,10 +1968,10 @@ function importFromJSON(txt, name){
       if(s){
         s.textContent = String(msg ?? '');
       }else{
-        console.log(msg);
+        if(SL_DEBUG) console.log(msg);
       }
     }catch(_e){
-      console.log(msg);
+      if(SL_DEBUG) console.log(msg);
     }
   }
 
@@ -1844,21 +2104,43 @@ function updateImportSummary(){
       windZero: numOrNull(el('manWindZero') && el('manWindZero').value),
       elevZero: numOrNull(el('manElevZero') && el('manElevZero').value),
       windCall: strOrNull(el('manWindCall') && el('manWindCall').value),
-      notes: strOrNull(el('manNotes') && el('manNotes').value)
+      notes: strOrNull(el('manNotes') && el('manNotes').value),
+      state: strOrNull(el('manStateSel') && el('manStateSel').value)
     };
   }
 
   function applyManualToShots(shots){
     const p = manualPayload();
     const changed = {n:0};
+
+    // If we're bulk-setting state, do it as a batch so we recompute once and keep Undo useful.
+    const doState = (p.state!=null);
+    const undoItems = [];
+    if(doState) bulkStateMode = true;
+
     for(const sh of shots){
       if(p.primerSeat!=null) sh.primerSeat = p.primerSeat;
       if(p.windZero!=null) sh.windZero = p.windZero;
       if(p.elevZero!=null) sh.elevZero = p.elevZero;
       if(p.windCall!=null) sh.windCall = p.windCall;
       if(p.notes!=null) sh.notes = p.notes;
+
+      if(doState){
+        undoItems.push({shotIdx: sh.idx, prevState:(sh.state||'RECORD'), prevSrc:(sh.stateSrc||'')});
+        setShotStateByIdx(sh.idx, p.state, false, 'MANUAL');
+      }
+
       changed.n++;
     }
+
+    if(doState){
+      bulkStateMode = false;
+      undo = {type:'multiShot', items: undoItems};
+      recomputeBlockStats();
+      recomputeGeoStats();
+      renderBlockRollups();
+    }
+
     return {p, changed:changed.n};
   }
 
@@ -3134,6 +3416,8 @@ Click to toggle EXCLUDE.`;
 
     }
 
+    if(bulkStateMode) return;
+
     const p4 = el('importStatus');
     if(p4){
       const srcTxt = (newState==='EXCLUDE' ? (sh.stateSrc||'') : '');
@@ -3165,6 +3449,18 @@ Click to toggle EXCLUDE.`;
       renderTable();
       renderGarminMapping();
       el('importStatus').innerHTML = `<span class="good">Undid Garmin mapping change.</span> <span class="hint">Matched: ${res.matched} • Unmapped: ${res.unmapped}</span>`;
+      return;
+    }
+
+    // Bulk shot state undo
+    if(undo.type === 'multiShot'){
+      const items = Array.isArray(undo.items) ? undo.items : [];
+      undo = null;
+      for(const it of items){
+        if(!it) continue;
+        setShotStateByIdx(it.shotIdx, it.prevState, false, it.prevSrc||'');
+      }
+      el('importStatus').innerHTML = `<span class="good">Undid bulk change.</span>`;
       return;
     }
 
@@ -3785,7 +4081,7 @@ function renderBlockRollups(){
 
 // Virtual All view (flat list) – only when not filtered to a block.
 if(!activeBlock && tablePrefs && tablePrefs.useVirtual && (tablePrefs.limit===0) && el('tableWrap')){
-  const view = [...smShots].sort((a,b)=>{
+  const view = [...smShots].filter(passesFilters).sort((a,b)=>{
     const ab = String(a.block||''); const bb = String(b.block||'');
     if(ab!==bb) return ab.localeCompare(bb);
     return (a.inBlock||0) - (b.inBlock||0);
@@ -3801,7 +4097,7 @@ if(!activeBlock && tablePrefs && tablePrefs.useVirtual && (tablePrefs.limit===0)
 
     // Active block view keeps sorting behavior (click headers)
     if(activeBlock){
-      let view = smShots.filter(s=>s.block===activeBlock);
+      let view = smShots.filter(s=>s.block===activeBlock && passesFilters(s));
 
       const key = tableSort && tableSort.key ? tableSort.key : null;
       const dir = (tableSort && tableSort.dir) ? tableSort.dir : 1;
@@ -3886,7 +4182,7 @@ try{ const sel = window.getSelection && window.getSelection(); if(sel && sel.rem
     const LIMIT = (tablePrefs && Number.isFinite(+tablePrefs.limit) && +tablePrefs.limit>0) ? +tablePrefs.limit : Infinity;
 
     for(const block of order){
-      const list0 = groups.get(block);
+      const list0 = (groups.get(block)||[]).filter(passesFilters);
       if(!list0 || !list0.length) continue;
 
       const list = [...list0].sort((a,b)=> (a.inBlock||0) - (b.inBlock||0));
@@ -4520,6 +4816,7 @@ el('fileSM').addEventListener('change', async (e)=>{
   // so the element may not exist when this code runs. We bind lazily at click-time.
   {
     const btnHelp = el('btnHelp');
+    const btnFilterHelp = el('btnFilterHelp');
     let modal = null;
     let wired = false;
 
@@ -4554,7 +4851,416 @@ el('fileSM').addEventListener('change', async (e)=>{
     };
 
     if(btnHelp) btnHelp.addEventListener('click', open);
+    if(btnFilterHelp) btnFilterHelp.addEventListener('click', ()=>{
+      open();
+      // Scroll to the Filters section inside Help
+      setTimeout(()=>{
+        const t = el('helpFilters');
+        if(t) t.scrollIntoView({behavior:'smooth', block:'start'});
+      }, 0);
+    });
+}
+
+
+  // ---------- v2.2.2: presets, filters, reset menu, action strip, shortcuts ----------
+  function scrollToEl(elem){
+    if(!elem) return;
+    try{ elem.scrollIntoView({behavior:'smooth', block:'start'}); }catch(_e){ elem.scrollIntoView(true); }
   }
+
+  function refreshBlockDropdowns(){
+    const blocks = (smBlocks && smBlocks.length)
+      ? smBlocks.map(b=>b.label)
+      : Array.from(new Set((smShots||[]).map(s=>s.block).filter(Boolean)));
+
+    // Manual block select
+    const manSel = el('manBlockSel');
+    if(manSel){
+      const prev = manSel.value || '';
+      manSel.innerHTML = `<option value="">(pick a string)</option>` + blocks.map(b=>`<option value="${esc(b)}">${esc(b)}</option>`).join('');
+      if(prev && blocks.includes(prev)) manSel.value = prev;
+    }
+
+    // Filter block select (also drives Active view for convenience)
+    const fSel = el('filterBlockSel');
+    if(fSel){
+      const prev = fSel.value || '';
+      fSel.innerHTML = `<option value="">All blocks</option>` + blocks.map(b=>`<option value="${esc(b)}">${esc(b)}</option>`).join('');
+      if(prev && blocks.includes(prev)) fSel.value = prev;
+    }
+  }
+
+  function refreshPresetSelect(){
+    const sel = el('layoutPresetSel');
+    if(!sel) return;
+    const names = Object.keys(PRESET_LAYOUTS||{}).sort((a,b)=>a.localeCompare(b));
+    const prev = sel.value || 'Essential';
+    sel.innerHTML = names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    sel.value = names.includes(prev) ? prev : (names.includes('Essential') ? 'Essential' : (names[0]||''));
+  }
+
+  function applyPresetByName(name){
+    if(!name || !PRESET_LAYOUTS[name]) return;
+    tablePrefs.visibleCols = normalizeVisibleCols(PRESET_LAYOUTS[name]);
+    saveTablePrefs();
+    renderTable();
+    toast(`Preset applied: ${name}`);
+  }
+
+  // Preset controls
+  {
+    const sel = el('layoutPresetSel');
+    const btn = el('btnApplyLayoutPreset');
+    if(sel && !sel.dataset.wired){
+      refreshPresetSelect();
+      sel.dataset.wired='1';
+    }
+    if(btn && !btn.dataset.wired){
+      btn.addEventListener('click', ()=>{
+        const nm = sel ? sel.value : '';
+        applyPresetByName(nm);
+      });
+      btn.dataset.wired='1';
+    }
+  }
+
+  // Filter bar wiring
+  {
+    const q = el('filterSearch');
+    const blk = el('filterBlockSel');
+    const hx = el('filterHideExcluded');
+    const oi = el('filterOnlyIssues');
+    const os = el('filterOnlySighters');
+    const mj = el('filterMissingJoin');
+    const clr = el('btnClearFilters');
+
+    if(hx) hx.checked = !!filterState.hideExcluded;
+
+    const wire = (elx, fn)=>{
+      if(!elx || elx.dataset.wired) return;
+      elx.addEventListener('input', fn);
+      elx.addEventListener('change', fn);
+      elx.dataset.wired='1';
+    };
+
+    wire(q, ()=>{
+      filterState.q = (q && q.value) ? q.value : '';
+      renderTable();
+    });
+
+    wire(blk, ()=>{
+      const v = blk ? blk.value : '';
+      // convenience: selecting a block jumps to Active view
+      activeBlock = v || null;
+      filterState.block = '';
+      renderBlockRollups();
+      renderTable();
+    });
+
+    wire(hx, ()=>{
+      filterState.hideExcluded = !!hx.checked;
+      renderTable();
+    });
+
+    wire(oi, ()=>{
+      filterState.onlyIssues = !!oi.checked;
+      renderTable();
+    });
+
+    wire(os, ()=>{
+      filterState.onlySighters = !!os.checked;
+      renderTable();
+    });
+
+    wire(mj, ()=>{
+      filterState.missingJoin = !!mj.checked;
+      renderTable();
+    });
+
+    if(clr && !clr.dataset.wired){
+      clr.addEventListener('click', ()=>{
+        filterState.q = '';
+        filterState.onlyIssues = false;
+        filterState.onlySighters = false;
+        filterState.missingJoin = false;
+        filterState.hideExcluded = true;
+        if(q) q.value = '';
+        if(oi) oi.checked = false;
+        if(os) os.checked = false;
+        if(mj) mj.checked = false;
+        if(hx) hx.checked = true;
+        if(blk) blk.value = '';
+        activeBlock = null;
+        renderBlockRollups();
+        renderTable();
+      });
+      clr.dataset.wired='1';
+    }
+  }
+
+  // Pairing buttons
+  {
+    const btnA = el('btnAutoPair');
+    const btnC = el('btnClearPairings');
+    const pill = el('pairingStatusPill');
+
+    if(btnA && !btnA.dataset.wired){
+      btnA.addEventListener('click', ()=>{
+        if(!smShots.length || !gFiles.length){
+          toast('Load ShotMarker + Chrono first');
+          return;
+        }
+        autoPairChronoSmart();
+        const res = applyChronoPairings();
+        if(pill){
+          pill.style.display = '';
+          pill.innerHTML = `<b>Pairing</b> • blocks: ${res.blocks} • mapped: ${res.mapped} • missing: ${res.missing}`;
+        }
+        recomputeBlockStats();
+        renderBlockRollups();
+        renderTable();
+      });
+      btnA.dataset.wired='1';
+    }
+
+    if(btnC && !btnC.dataset.wired){
+      btnC.addEventListener('click', ()=>{
+        chronoPair.clear();
+        applyChronoPairings();
+        if(pill){ pill.style.display='none'; pill.innerHTML=''; }
+        renderPairingPanel();
+        renderTable();
+        toast('Pairings cleared');
+      });
+      btnC.dataset.wired='1';
+    }
+  }
+
+  // Bulk state buttons + keyboard shortcuts
+  function applyStateToSelected(state, src='MANUAL'){
+    if(!selectedShots.size){
+      toast('No shots selected');
+      return;
+    }
+    const ids = Array.from(selectedShots);
+    const items = [];
+    bulkStateMode = true;
+    for(const id of ids){
+      const sh = smShots.find(s=>s.idx===id);
+      if(!sh) continue;
+      items.push({shotIdx:id, prevState:(sh.state||'RECORD'), prevSrc:(sh.stateSrc||'')});
+      setShotStateByIdx(id, state, false, src);
+    }
+    bulkStateMode = false;
+    undo = {type:'multiShot', items};
+    recomputeBlockStats();
+    recomputeGeoStats();
+    renderBlockRollups();
+    renderTable();
+    toast(`Set ${ids.length} shot(s) → ${state}`);
+  }
+
+  {
+    const br = el('btnBulkRecord');
+    const bs = el('btnBulkSighter');
+    const bx = el('btnBulkExclude');
+    if(br && !br.dataset.wired){ br.addEventListener('click', ()=>applyStateToSelected('RECORD','MANUAL')); br.dataset.wired='1'; }
+    if(bs && !bs.dataset.wired){ bs.addEventListener('click', ()=>applyStateToSelected('SIGHTER','MANUAL')); bs.dataset.wired='1'; }
+    if(bx && !bx.dataset.wired){ bx.addEventListener('click', ()=>applyStateToSelected('EXCLUDE','MANUAL')); bx.dataset.wired='1'; }
+
+    if(!document.body.dataset.hotkeys){
+      document.addEventListener('keydown', (e)=>{
+        const t = e.target;
+        const inInput = t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.tagName==='SELECT' || t.isContentEditable);
+        if(inInput) return;
+
+        if(e.key === '?' || (e.shiftKey && e.key === '/')){
+          const b = el('btnHelp'); if(b) b.click();
+          e.preventDefault(); return;
+        }
+        if(e.key === 'Escape'){
+          selectedShots.clear();
+          updateSelPill();
+          renderTable();
+          e.preventDefault(); return;
+        }
+        if(e.key === 'r' || e.key === 'R'){ applyStateToSelected('RECORD','MANUAL'); e.preventDefault(); return; }
+        if(e.key === 's' || e.key === 'S'){ applyStateToSelected('SIGHTER','MANUAL'); e.preventDefault(); return; }
+        if(e.key === 'x' || e.key === 'X'){ applyStateToSelected('EXCLUDE','MANUAL'); e.preventDefault(); return; }
+      });
+      document.body.dataset.hotkeys='1';
+    }
+  }
+
+  // Reset menu modal
+  {
+    const btn = el('btnResetMenu');
+    const modal = el('resetModal');
+    const closeBtn = el('btnResetClose');
+    const open = ()=>{
+      if(!modal) return;
+      modal.classList.remove('hidden');
+    };
+    const close = ()=>{
+      if(!modal) return;
+      modal.classList.add('hidden');
+    };
+    if(btn && !btn.dataset.wired){
+      btn.addEventListener('click', open);
+      btn.dataset.wired='1';
+    }
+    if(closeBtn && !closeBtn.dataset.wired){
+      closeBtn.addEventListener('click', close);
+      closeBtn.dataset.wired='1';
+    }
+    if(modal && !modal.dataset.wired){
+      modal.addEventListener('click', (e)=>{
+        const t = e.target;
+        if(!(t instanceof HTMLElement)) return;
+        if(t.getAttribute('data-close')==='1') close();
+      });
+      modal.dataset.wired='1';
+    }
+    const rs = el('btnResetSession');
+    const rtp = el('btnResetTablePrefs');
+    const rl = el('btnResetLayouts');
+    const rv = el('btnResetViewFromMenu');
+
+    if(rs && !rs.dataset.wired){
+      rs.addEventListener('click', ()=>{
+        clearAll();
+        close();
+        toast('Session cleared');
+      });
+      rs.dataset.wired='1';
+    }
+    if(rtp && !rtp.dataset.wired){
+      rtp.addEventListener('click', ()=>{
+        try{ localStorage.removeItem(TABLE_PREFS_KEY); }catch(_e){}
+        loadTablePrefs();
+        close();
+        renderTable();
+        toast('Table prefs reset');
+      });
+      rtp.dataset.wired='1';
+    }
+    if(rl && !rl.dataset.wired){
+      rl.addEventListener('click', ()=>{
+        try{ localStorage.removeItem(TABLE_LAYOUTS_KEY); }catch(_e){}
+        close();
+        toast('Saved layouts reset');
+      });
+      rl.dataset.wired='1';
+    }
+    if(rv && !rv.dataset.wired){
+      rv.addEventListener('click', ()=>{
+        if(el('btnResetView')) el('btnResetView').click();
+        close();
+      });
+      rv.dataset.wired='1';
+    }
+  }
+
+  // Next action bar
+  function updateNextActionBar(){
+    const bar = el('nextActionBar');
+    const steps = el('nextActionSteps');
+    const msg = el('nextActionMsg');
+    const btn = el('btnNextDo');
+    if(!bar || !steps || !msg || !btn) return;
+
+    // allow dismiss for this reload
+    if(window.__dismissNextAction) { bar.classList.add('hidden'); return; }
+
+    const hasSM = !!(smShots && smShots.length);
+    const hasChrono = !!(gFiles && gFiles.length);
+    const hasK = !!(kSamples && kSamples.length);
+    const hasAMP = !!(ampSession && ampSession.map && ampSession.map.size);
+
+    const todo = [];
+    if(!hasSM) todo.push('ShotMarker');
+    if(hasSM && !hasChrono) todo.push('Chrono');
+    if(hasSM && hasChrono){
+      // if any block lacks pairing name, prompt pairing
+      const blocks = (smBlocks && smBlocks.length) ? smBlocks.map(b=>b.label) : Array.from(new Set(smShots.map(s=>s.block).filter(Boolean)));
+      const need = blocks.some(b=> !(chronoPair.get(b) && chronoPair.get(b).name));
+      if(need && shouldShowChronoControls()) todo.push('Pairing');
+    }
+    // Kestrel/AMP are optional - show as optional hints
+    const opt = [];
+    if(hasSM && !hasK) opt.push('Kestrel');
+    if(hasSM && !hasAMP) opt.push('AMP');
+
+    const chip = (label, cls)=>`<span class="stepChip ${cls}">${esc(label)}</span>`;
+    steps.innerHTML =
+      chip('ShotMarker', hasSM?'ok':'todo') +
+      chip('Chrono', hasChrono?'ok':(hasSM?'todo':'todo')) +
+      chip('Pair', (hasSM && hasChrono && !todo.includes('Pairing')) ? 'ok' : ((hasSM && hasChrono) ? 'todo' : 'todo')) +
+      chip('Kestrel', hasK?'ok':'warn') +
+      chip('AMP', hasAMP?'ok':'warn');
+
+    let action = null;
+
+    if(!hasSM){
+      msg.textContent = 'Import ShotMarker CSV to begin.';
+      action = ()=>{
+        const inp = el('fileSM'); if(inp) inp.click();
+        scrollToEl(el('fileSM'));
+      };
+    }else if(!hasChrono){
+      msg.textContent = 'Import Chrono CSVs (one per string), then check pairing.';
+      action = ()=>{
+        const inp = el('fileG'); if(inp) inp.click();
+        scrollToEl(el('fileG'));
+      };
+    }else if(todo.includes('Pairing')){
+      msg.textContent = 'Check pairing: ShotMarker strings ↔ chrono files.';
+      action = ()=>{
+        // open pairing rollup
+        const body = el('pairBody');
+        if(body && body.classList.contains('hidden')){
+          body.classList.remove('hidden');
+          const ch = el('pairChevron'); if(ch) ch.textContent = '▾';
+        }
+        scrollToEl(el('pairingCard'));
+      };
+    }else{
+      msg.textContent = opt.length ? `Ready. Optional: ${opt.join(' + ')}.` : 'Ready. Review blocks, then export JSON/CSV.';
+      action = ()=>{
+        // open Tools rollup
+        const body = el('toolsBody');
+        if(body && body.classList.contains('hidden')){
+          body.classList.remove('hidden');
+          const ch = el('toolsChevron'); if(ch) ch.textContent = '▾';
+        }
+        scrollToEl(el('phase4ToolsCard'));
+      };
+    }
+
+    btn.onclick = action;
+    bar.classList.remove('hidden');
+  }
+
+  {
+    const dismiss = el('btnNextSkip');
+    if(dismiss && !dismiss.dataset.wired){
+      dismiss.addEventListener('click', ()=>{
+        window.__dismissNextAction = true;
+        const bar = el('nextActionBar'); if(bar) bar.classList.add('hidden');
+      });
+      dismiss.dataset.wired='1';
+    }
+  }
+
+  // Refresh dynamic dropdowns + action strip whenever imports change
+  const _origUpdateImportStepper = updateImportStepper;
+  updateImportStepper = function(){
+    try{ _origUpdateImportStepper(); }catch(_e){}
+    try{ refreshBlockDropdowns(); }catch(_e){}
+    try{ updateNextActionBar(); }catch(_e){}
+    try{ refreshPresetSelect(); }catch(_e){}
+  };
+
 
   // Manual inputs wiring + shot selection
   {
@@ -4621,6 +5327,133 @@ el('fileSM').addEventListener('change', async (e)=>{
   try{ updateImportSummary(); }catch(_e){}
   renderBlockRollups();
 })();
+
+  // --- v2.2.2: Blue tooltips (replace native title tooltips) ----------------
+  function initBlueTooltips(){
+    // Create tooltip element once
+    let tip = document.getElementById('slBlueTip');
+    if(!tip){
+      tip = document.createElement('div');
+      tip.id = 'slBlueTip';
+      document.body.appendChild(tip);
+    }
+
+    const harvest = (root)=>{
+      if(!root || !root.querySelectorAll) return;
+      root.querySelectorAll('[title]').forEach(n=>{
+        if(n.dataset && n.dataset.slTitle) return;
+        const t = n.getAttribute('title');
+        if(!t) return;
+        n.dataset.slTitle = t;
+        n.removeAttribute('title'); // suppress native tooltip
+      });
+    };
+
+    // Harvest existing titles, and keep harvesting dynamically-created nodes
+    harvest(document);
+    const mo = new MutationObserver((mutations)=>{
+      for(const mu of mutations){
+        if(mu.type === 'childList'){
+          mu.addedNodes && mu.addedNodes.forEach(n=>{
+            if(n.nodeType === 1){
+              harvest(n);
+              // If the node itself has title
+              if(n.getAttribute && n.getAttribute('title')){
+                const t = n.getAttribute('title');
+                if(t){
+                  n.dataset.slTitle = t;
+                  n.removeAttribute('title');
+                }
+              }
+            }
+          });
+        }else if(mu.type === 'attributes' && mu.attributeName === 'title'){
+          const n = mu.target;
+          if(n && n.getAttribute){
+            const t = n.getAttribute('title');
+            if(t){
+              n.dataset.slTitle = t;
+              n.removeAttribute('title');
+            }
+          }
+        }
+      }
+    });
+    mo.observe(document.documentElement, {subtree:true, childList:true, attributes:true, attributeFilter:['title']});
+
+    let activeEl = null;
+    const getText = (el)=>{
+      if(!el) return '';
+      // Prefer explicit data-tip, fall back to harvested title text
+      return (el.dataset && (el.dataset.tip || el.dataset.slTitle || el.dataset.tooltip)) || '';
+    };
+
+    const show = (el, x, y)=>{
+      const text = getText(el);
+      if(!text) return;
+      tip.textContent = text;
+      tip.classList.add('show');
+      position(x, y);
+    };
+
+    const hide = ()=>{
+      tip.classList.remove('show');
+      activeEl = null;
+    };
+
+    const position = (x, y)=>{
+      const pad = 10;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      // start near cursor with offset
+      let left = x + 14;
+      let top  = y + 14;
+
+      // Measure after content set
+      const r = tip.getBoundingClientRect();
+      if(left + r.width + pad > vw) left = Math.max(pad, vw - r.width - pad);
+      if(top  + r.height + pad > vh) top  = Math.max(pad, y - r.height - 14);
+      tip.style.left = left + 'px';
+      tip.style.top  = top + 'px';
+    };
+
+    document.addEventListener('pointermove', (e)=>{
+      if(!activeEl) return;
+      position(e.clientX, e.clientY);
+    }, {passive:true});
+
+    document.addEventListener('pointerover', (e)=>{
+      const el = e.target && e.target.closest && e.target.closest('[data-tip],[data-tooltip],[data-sl-title],[data-slTitle]');
+      if(!el) return;
+      activeEl = el;
+      show(el, e.clientX, e.clientY);
+    });
+
+    document.addEventListener('pointerout', (e)=>{
+      const related = e.relatedTarget;
+      if(activeEl && (!related || !(related.closest && related.closest('[data-tip],[data-tooltip],[data-sl-title],[data-slTitle]')))){
+        hide();
+      }
+    });
+
+    // Keyboard accessibility
+    document.addEventListener('focusin', (e)=>{
+      const el = e.target && e.target.closest && e.target.closest('[data-tip],[data-tooltip],[data-sl-title],[data-slTitle]');
+      if(!el) return;
+      activeEl = el;
+      const b = el.getBoundingClientRect();
+      show(el, Math.round(b.left + b.width/2), Math.round(b.bottom));
+    });
+
+    document.addEventListener('focusout', ()=> hide());
+    // Hide on scroll so it doesn't drift
+    window.addEventListener('scroll', ()=> hide(), {passive:true});
+  }
+
+  try{
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initBlueTooltips);
+    else initBlueTooltips();
+  }catch(_){}
+
 </script>
 <div class="modal hidden" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
   <div class="modal__backdrop" data-close="1"></div>
@@ -4634,28 +5467,72 @@ el('fileSM').addEventListener('change', async (e)=>{
     </div>
     <div class="modal__body">
       <div class="modal__section">
+        <div class="modal__h">Start here (the happy path)</div>
+        <ol>
+          <li><b>Import ShotMarker CSV</b> (Export all traces). You should see blocks/strings and shot counts.</li>
+          <li><b>Import Chrono CSVs</b> (one file per ShotMarker string). ShotLedger will auto-pair, then you can correct it.</li>
+          <li><b>Optional:</b> import Kestrel + AMP for richer diagnostics.</li>
+        </ol>
+        <div class="hint">Tip: the “Next” bar at the top will point you at the next missing step.</div>
+      </div>
+
+      <div class="modal__section">
+        <div class="modal__h">Pairing rules (important)</div>
+        <ul>
+          <li>Pairing is <b>per-string</b>: 1 ShotMarker string ↔ 1 chrono file.</li>
+          <li>Mapping is <b>by shot index within the string</b> (1..N). Order matters.</li>
+          <li>If counts don’t match, ShotLedger shows a warning and lets you fix pairings manually.</li>
+        </ul>
+      </div>
+
+      <div class="modal__section">
         <div class="modal__h">Shot states</div>
         <ul>
-          <li><b>R (Record)</b>: shots that count for string/block stats.</li>
-          <li><b>S (Sighter)</b>: visible for context, excluded from record stats.</li>
-          <li><b>✕ (Exclude)</b>: removed from record stats. Use for obvious mistakes or corrupted data.</li>
+          <li><b>R (Record)</b>: counts toward stats.</li>
+          <li><b>S (Sighter)</b>: shown for context, excluded from record stats.</li>
+          <li><b>✕ (Exclude)</b>: removed from record stats.</li>
         </ul>
+        <div class="hint">Click ΔVel(σ) chips to toggle <b>Exclude</b> quickly; use Undo if you fat-finger it.</div>
       </div>
+
       <div class="modal__section">
-        <div class="modal__h">What to trust</div>
+        <div class="modal__h">How to read issues</div>
         <ul>
-          <li><b>Vertical MOA</b> is the primary performance signal at distance.</li>
-          <li><b>Velocity</b> explains vertical (and can diagnose heat / node shifts), but doesn’t “win” by itself.</li>
-          <li><b>Join Health</b> tells you whether Kestrel/Garmin/AMP data actually mapped onto your record shots.</li>
+          <li><b>Join = MISS/BAD</b>: Kestrel time match didn’t land (or looks wrong).</li>
+          <li><b>Row highlight</b>: missing Garmin mapping, preview changes, or dirty edits.</li>
+          <li><b>ΔVel (σ)</b>: “eyebrow raise” starts around ~1.3σ; ~1.9σ is a strong candidate for exclusion.</li>
         </ul>
       </div>
+
+      
+      <div class="modal__section" id="helpFilters">
+        <div class="modal__h">Filters & views</div>
+        <ul>
+          <li><b>Search</b> matches block name, tag, notes, and numeric fields (like score) where applicable.</li>
+          <li><b>Hide excluded</b> removes ✕ rows from the table view (stats already ignore them).</li>
+          <li><b>Only issues</b> shows rows that need attention: join misses, missing mappings, or edited/dirty rows.</li>
+          <li><b>Missing joins</b> narrows to rows where the Kestrel join did not land (Join = MISS/BAD).</li>
+        </ul>
+        <div class="hint">Tip: use the column presets (Essential / Chrono / Wind / AMP / Geometry) to quickly change what you’re looking at.</div>
+      </div>
+<div class="modal__section">
+        <div class="modal__h">Shortcuts</div>
+        <ul>
+          <li><b>?</b> open Help</li>
+          <li><b>r</b> / <b>s</b> / <b>x</b> → set selected shots to Record / Sighter / Exclude</li>
+          <li><b>Esc</b> clears selection</li>
+        </ul>
+      </div>
+
       <div class="modal__section">
-        <div class="modal__h">Preview mode</div>
+        <div class="modal__h">Troubleshooting</div>
         <ul>
-          <li>Use <b>Preview</b> to try exclusions/state changes and see updated stats.</li>
-          <li><b>Apply</b> keeps changes; <b>Cancel</b> reverts everything from when preview started.</li>
+          <li>If ShotMarker says “0 shots”, check you exported <b>all traces</b> and that the header row is present.</li>
+          <li>If pairing looks wrong, hit <b>Auto-pair</b> then manually override the few offenders.</li>
+          <li>If the table feels “stuck”, hit <b>Reset view</b> or try <b>Virtual</b> mode for big datasets.</li>
         </ul>
       </div>
+
       <div class="modal__section">
         <div class="modal__h">What ShotLedger intentionally does NOT do</div>
         <ul>
@@ -4663,7 +5540,7 @@ el('fileSM').addEventListener('change', async (e)=>{
           <li>No single “magic score.” You stay in control.</li>
         </ul>
       </div>
-    </div>
+    </div></div>
   </div>
 </div>
 
@@ -4694,5 +5571,43 @@ el('fileSM').addEventListener('change', async (e)=>{
     </div>
   </div>
 </div>
+
+<div class="modal hidden" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+  <div class="modal__backdrop" data-close="1"></div>
+  <div class="modal__panel card">
+    <div class="modal__hdr">
+      <div>
+        <div class="modal__title" id="resetTitle">Reset</div>
+        <div class="modal__sub">Pick what to reset — you won’t lose the HTML file itself, just the loaded session / local preferences.</div>
+      </div>
+      <button class="btn small ghost" id="btnResetClose" type="button">Close</button>
+    </div>
+    <div class="modal__body">
+      <div class="modal__section">
+        <div class="modal__h">Session data</div>
+        <div class="row" style="gap:10px; flex-wrap:wrap;">
+          <button class="btn" id="btnResetSession" type="button">Clear loaded session</button>
+          <div class="hint">Clears loaded ShotMarker / Chrono / AMP / Kestrel data, pairings, edits, and selection.</div>
+        </div>
+      </div>
+      <div class="modal__section">
+        <div class="modal__h">Table preferences</div>
+        <div class="row" style="gap:10px; flex-wrap:wrap;">
+          <button class="btn ghost" id="btnResetTablePrefs" type="button">Reset table prefs</button>
+          <button class="btn ghost" id="btnResetLayouts" type="button">Reset saved layouts</button>
+          <div class="hint">Resets density, sort, virtual mode, and column visibility/saved layouts stored in this browser.</div>
+        </div>
+      </div>
+      <div class="modal__section">
+        <div class="modal__h">Quick</div>
+        <div class="row" style="gap:10px; flex-wrap:wrap;">
+          <button class="btn small ghost" id="btnResetViewFromMenu" type="button">Reset view (sort/density)</button>
+          <span class="hint">Same as the table “Reset” button.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
