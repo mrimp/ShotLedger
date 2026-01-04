@@ -1,12 +1,15 @@
 
-
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>ShotLedger v2.2.2</title>
+<!-- ShotLedger v2.2.6 RELEASE (offline, single-file)
+     - Exclude (✕) keeps rows visible and grays them out
+     - Reset fixed and fully rewires UI
+     - Removed extension-injected artifacts and external resource refs
+     Build: 2026-01-04 -->
+<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ShotLedger v2.2.6</title>
 <style>
   :root{
     --bg0:#070b12; --bg1:#0b1220; --card: rgba(10,18,32,.72);
@@ -597,7 +600,7 @@
 .modalCard .modalHead{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
 .modalCard .modalFoot{display:flex; justify-content:flex-end; gap:10px; padding-top:12px;}
 
-  /* v2.2.2 UX */
+  /* v2.2.6 UX */
   .nextActionBar{
     position: sticky;
     top: 0;
@@ -680,7 +683,7 @@
   .btnGroup .btn{min-width:34px; padding:8px 10px;}
 
 
-  /* --- v2.2.2: blue tooltips + filter help icon --- */
+  /* --- v2.2.6: blue tooltips + filter help icon --- */
   .infoIcon{
     width:18px; height:18px; line-height:18px;
     border-radius:999px;
@@ -720,14 +723,14 @@
 
 </style>
 </head>
-<body>
+<body data-hotkeys="1">
 <div class="wrap">
   
   <header class="suiteHeader">
     <div class="suiteHeader__left">
       <div class="suiteHeader__topline">
         <div class="suiteHeader__title">ShotLedger</div>
-        <div class="suiteHeader__pill">v2.2.2</div>
+        <div class="suiteHeader__pill">v2.2.6</div>
         <div class="suiteHeader__pill suiteHeader__pill--muted">standalone</div>
       </div>
       <div class="suiteHeader__tagline">
@@ -736,10 +739,10 @@
     </div>
     <div class="suiteHeader__right">
       <button class="btn small" id="toggleRightBtn" type="button">Hide Kestrel panel</button>
-            <button class="btn small ghost" id="btnResetMenu" type="button" title="Reset options">Reset</button>
-<button class="btn small ghost" id="btnHelp" type="button" title="What is ShotLedger?">?</button>
-      <div class="suiteHeader__badge" title="Suite mark">
-        <img class="suiteHeader__badgeImg" alt="Target" src="data:image/jpeg;base64,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"/>
+            <button class="btn small ghost" id="btnResetMenu" type="button" data-sl-title="Reset options">Reset</button>
+<button class="btn small ghost" id="btnHelp" type="button" data-sl-title="What is ShotLedger?">?</button>
+      <div class="suiteHeader__badge" data-sl-title="Suite mark">
+        <img class="suiteHeader__badgeImg" alt="Target" src="data:image/jpeg;base64,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">
       </div>
     </div>
   </header>
@@ -749,12 +752,12 @@
   <div class="nextActionBar" id="nextActionBar">
     <div class="nextActionBar__left">
       <div class="nextActionBar__title">Next:</div>
-      <div class="nextActionBar__steps" id="nextActionSteps"></div>
-      <div class="nextActionBar__msg" id="nextActionMsg"></div>
+      <div class="nextActionBar__steps" id="nextActionSteps"><span class="stepChip todo">ShotMarker</span><span class="stepChip todo">Chrono</span><span class="stepChip todo">Pair</span><span class="stepChip warn">Kestrel</span><span class="stepChip warn">AMP</span></div>
+      <div class="nextActionBar__msg" id="nextActionMsg">Import ShotMarker CSV to begin.</div>
     </div>
     <div class="nextActionBar__right">
       <button class="btn small" id="btnNextDo" type="button">Continue</button>
-      <button class="btn small ghost" id="btnNextSkip" type="button" title="Hide until next reload">Dismiss</button>
+      <button class="btn small ghost" id="btnNextSkip" type="button" data-sl-title="Hide until next reload">Dismiss</button>
     </div>
   </div>
 
@@ -770,20 +773,33 @@
         <button class="btn small" id="btnGClear" type="button">Clear Garmin</button>
         <button class="btn small" id="btnAMP" type="button">AMP CSV</button>
         <button class="btn small" id="btnAMPClear" type="button">Clear AMP</button>
-        <input class="hidden" id="fileSM" type="file" accept=".csv,text/csv"/>
-        <input class="hidden" id="fileK" type="file" accept=".csv,text/csv"/>
-        <input class="hidden" id="fileG" type="file" accept=".csv,text/csv" multiple/>
-        <input class="hidden" id="fileAMP" type="file" accept=".csv,text/csv"/>
+        <input class="hidden" id="fileSM" type="file" accept=".csv,text/csv">
+        <input class="hidden" id="fileK" type="file" accept=".csv,text/csv">
+        <input class="hidden" id="fileG" type="file" accept=".csv,text/csv" multiple="">
+        <input class="hidden" id="fileAMP" type="file" accept=".csv,text/csv">
       </div>
     </div>
     <div class="row" id="importPills"></div>
     <div class="status" id="importStatus"></div>
-    <div class="stepper" id="importStepper"></div>
+    <div class="stepper" id="importStepper">
+    <div class="step">
+      <div class="left"><div class="t">1) ShotMarker</div><div class="m">Import a ShotMarker CSV (targets + shots).</div></div>
+      <span class="badge off">Missing</span>
+    </div>
+    <div class="step">
+      <div class="left"><div class="t">2) Chrono pairing</div><div class="m">Load chrono/Garmin CSVs (1 per target) to override velocities.</div></div>
+      <span class="badge off">Optional</span>
+    </div>
+    <div class="step">
+      <div class="left"><div class="t">3) Kestrel / AMP</div><div class="m">Load Kestrel/AMP if you want per-shot environment / anomalies.</div></div>
+      <span class="badge off">Optional</span>
+    </div>
+  </div>
     <div class="importSummary" id="importSummary" style="display:none;"></div>
   </div>
 
   <div class="card" id="phase4ToolsCard">
-    <div class="rollupHeader" id="toolsHeader">
+    <div class="rollupHeader" id="toolsHeader" aria-expanded="false">
           <div>
             <b>Tools</b>
             <div class="meta">Undo, exports, Garmin mapping</div>
@@ -793,12 +809,12 @@
         <div class="rollupBody hidden" id="toolsBody">
           <div class="row miniBtns" style="margin-top:2px;">
 
-        <button class="btn small ghost" id="btnUndo" type="button" title="Undo last state change">Undo</button>
+        <button class="btn small ghost" id="btnUndo" type="button" data-sl-title="Undo last state change">Undo</button>
         <button class="btn small" id="btnImportJSON" type="button">Import JSON</button>
         <button class="btn small" id="btnExportCSV" type="button">Export CSV</button>
         <button class="btn small" id="btnExportJSON" type="button">Export JSON</button>
-        <button class="btn small ghost" id="btnClearAll" type="button" title="Clear all loaded data">Clear</button>
-        <input class="hidden" id="fileJSON" type="file" accept=".json,application/json"/>
+        <button class="btn small ghost" id="btnClearAll" type="button" data-sl-title="Clear all loaded data">Clear</button>
+        <input class="hidden" id="fileJSON" type="file" accept=".json,application/json">
       </div>
     <div class="hint">Tip: the <b>ΔVel (σ)</b> chip shows how many SDs a shot’s velocity is from the block mean (record shots). Click the chip to toggle <b>Exclude</b>. Undo restores the last change.
 
@@ -810,16 +826,14 @@
                   <div class="meta" id="pairMetaLine">ShotMarker strings → Chrono sources</div>
                 
             <div class="filterBar" id="filterBar">
-              <input id="filterSearch" class="miniInput" type="text" placeholder="Search notes/tag/block…" title="Filter by block, tag, notes, score"/>
-              <select id="filterBlockSel" class="miniSelect" title="Block filter">
-                <option value="">All blocks</option>
-              </select>
-              <label class="chk"><input type="checkbox" id="filterHideExcluded"/> Hide excluded</label>
-              <label class="chk"><input type="checkbox" id="filterOnlyIssues"/> Only issues</label>
-              <label class="chk"><input type="checkbox" id="filterOnlySighters"/> Only sighters</label>
-              <label class="chk"><input type="checkbox" id="filterMissingJoin"/> Missing joins</label>
+              <input id="filterSearch" class="miniInput" type="text" placeholder="Search notes/tag/block…" data-sl-title="Filter by block, tag, notes, score">
+              <select id="filterBlockSel" class="miniSelect" data-sl-title="Block filter"><option value="">All blocks</option></select>
+              <label class="chk"><input type="checkbox" id="filterHideExcluded"> Hide excluded</label>
+              <label class="chk"><input type="checkbox" id="filterOnlyIssues"> Only issues</label>
+              <label class="chk"><input type="checkbox" id="filterOnlySighters"> Only sighters</label>
+              <label class="chk"><input type="checkbox" id="filterMissingJoin"> Missing joins</label>
               
-              <button class="infoIcon" id="btnFilterHelp" type="button" data-tip="Filters & views
+              <button class="infoIcon" id="btnFilterHelp" type="button" data-tip="Filters &amp; views
 
 • Search matches block/tag/notes/score.
 • Hide excluded hides ✕ rows.
@@ -827,9 +841,9 @@
 • Missing joins shows Kestrel join misses.
 
 Click this ? to open Help at the Filters section.">?</button>
-<button class="btn small ghost" id="btnClearFilters" type="button" title="Clear filters">Clear</button>
+<button class="btn small ghost" id="btnClearFilters" type="button" data-sl-title="Clear filters">Clear</button>
               <div class="filterBar__spacer"></div>
-              <div class="btnGroup" id="bulkStateGroup" title="Apply shot state to selected shots">
+              <div class="btnGroup" id="bulkStateGroup" data-sl-title="Apply shot state to selected shots">
                 <button class="btn small ghost" id="btnBulkRecord" type="button">R</button>
                 <button class="btn small ghost" id="btnBulkSighter" type="button">S</button>
                 <button class="btn small ghost" id="btnBulkExclude" type="button">✕</button>
@@ -844,8 +858,8 @@ Click this ? to open Help at the Filters section.">?</button>
                 </div>
                 
                 <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px;">
-                  <button class="btn small" id="btnAutoPair" type="button" title="Auto-pair ShotMarker strings to chrono files (smart)">Auto-pair</button>
-                  <button class="btn small ghost" id="btnClearPairings" type="button" title="Clear all pairings">Clear pairings</button>
+                  <button class="btn small" id="btnAutoPair" type="button" data-sl-title="Auto-pair ShotMarker strings to chrono files (smart)">Auto-pair</button>
+                  <button class="btn small ghost" id="btnClearPairings" type="button" data-sl-title="Clear all pairings">Clear pairings</button>
                   <span class="pill" id="pairingStatusPill" style="margin-left:auto; display:none;"></span>
                 </div>
 <div class="pairList" id="pairingList"></div>
@@ -857,10 +871,10 @@ Click this ? to open Help at the Filters section.">?</button>
   </div>
 
 <div class="card" id="blocksCard" style="margin-bottom:14px;">
-      <div class="rollupHeader" id="blocksHeader">
+      <div class="rollupHeader" id="blocksHeader" aria-expanded="false">
         <div>
           <b>Blocks</b>
-          <div class="meta" id="blocksMeta">Rollups, distance, filters</div>
+          <div class="meta" id="blocksMeta" title="">Rollups, distance, filters</div>
         </div>
         <div id="blocksChevron">▸</div>
       </div>
@@ -875,7 +889,7 @@ Click this ? to open Help at the Filters section.">?</button>
       <div class="row" style="margin-top:10px; gap:12px; align-items:flex-end;">
         <div style="min-width:200px;">
           <label style="margin:0 0 6px;">Default distance (yd)</label>
-          <input id="defaultDist" type="number" min="10" step="1" value="1000"/>
+          <input id="defaultDist" type="number" min="10" step="1" value="1000">
         </div>
         <div class="hint" style="margin-bottom:2px;">Distance drives MOA + dispersion stats. You can override per block on the right.</div>
       </div>
@@ -900,14 +914,14 @@ Click this ? to open Help at the Filters section.">?</button>
             <div>
               <label>Alignment mode</label>
               <select id="alignMode">
-                <option value="anchors" selected>Anchors (2-point map)</option>
+                <option value="anchors" selected="">Anchors (2-point map)</option>
               </select>
             </div>
             <div>
               <label>Tolerance</label>
               <select id="tolSel">
                 <option value="5">±5s</option>
-                <option value="10" selected>±10s</option>
+                <option value="10" selected="">±10s</option>
                 <option value="15">±15s</option>
                 <option value="30">±30s</option>
                 <option value="60">±60s</option>
@@ -918,12 +932,12 @@ Click this ? to open Help at the Filters section.">?</button>
           <div class="two">
             <div>
               <label>Session date (for anchors)</label>
-              <input id="sessionDate" type="date"/>
+              <input id="sessionDate" type="date">
             </div>
             <div>
               <label>Join</label>
               <select id="joinMode">
-                <option value="nearest" selected>Nearest sample</option>
+                <option value="nearest" selected="">Nearest sample</option>
               </select>
             </div>
           </div>
@@ -931,22 +945,22 @@ Click this ? to open Help at the Filters section.">?</button>
           <div class="two">
             <div>
               <label>Anchor A shot #</label>
-              <input id="aShot" type="number" min="1" value="1"/>
+              <input id="aShot" type="number" min="1" value="1">
             </div>
             <div>
               <label>Anchor A time (HH:MM:SS)</label>
-              <input id="aTime" type="text" value="19:28:10" placeholder="19:28:10"/>
+              <input id="aTime" type="text" value="19:28:10" placeholder="19:28:10">
             </div>
           </div>
 
           <div class="two">
             <div>
               <label>Anchor B shot #</label>
-              <input id="bShot" type="number" min="1" value="60"/>
+              <input id="bShot" type="number" min="1" value="60">
             </div>
             <div>
               <label>Anchor B time (HH:MM:SS)</label>
-              <input id="bTime" type="text" value="19:41:55" placeholder="19:41:55"/>
+              <input id="bTime" type="text" value="19:41:55" placeholder="19:41:55">
             </div>
           </div>
 
@@ -963,7 +977,7 @@ Click this ? to open Help at the Filters section.">?</button>
           <!-- Garmin mapping moved to main column -->
 </div>
 <div class="card" id="manualCard" style="margin-top:14px;">
-        <div class="rollupHeader" id="manHeader">
+        <div class="rollupHeader" id="manHeader" aria-expanded="false">
           <div>
             <b>Manual inputs</b>
             <div class="meta">Apply to selected shots or a whole string</div>
@@ -993,7 +1007,7 @@ Click this ? to open Help at the Filters section.">?</button>
           </div>
 <div style="margin-top:10px;">
             <label>— Select string —</label>
-            <select id="manBlockSel"></select>
+            <select id="manBlockSel"><option value="">(pick a string)</option></select>
           </div>
 
           <div class="row" style="gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px;">
@@ -1003,22 +1017,22 @@ Click this ? to open Help at the Filters section.">?</button>
 
           <div style="margin-top:12px;">
             <label>Primer Seat (in)</label>
-            <input id="manPrimerSeat" type="number" step="0.0001" placeholder="e.g. 0.0035"/>
+            <input id="manPrimerSeat" type="number" step="0.0001" placeholder="e.g. 0.0035">
           </div>
 
           <div style="margin-top:10px;">
             <label>Wind Zero Δ (MOA)</label>
-            <input id="manWindZero" type="number" step="0.01" placeholder="e.g. +0.25"/>
+            <input id="manWindZero" type="number" step="0.01" placeholder="e.g. +0.25">
           </div>
 
           <div style="margin-top:10px;">
             <label>Elev Zero Δ (MOA)</label>
-            <input id="manElevZero" type="number" step="0.01" placeholder="e.g. -0.10"/>
+            <input id="manElevZero" type="number" step="0.01" placeholder="e.g. -0.10">
           </div>
 
           <div style="margin-top:10px;">
             <label>Wind Call</label>
-            <input id="manWindCall" type="text" placeholder="e.g. hold 0.5L, 6–10mph"/>
+            <input id="manWindCall" type="text" placeholder="e.g. hold 0.5L, 6–10mph">
           </div>
 
           <div style="margin-top:10px;">
@@ -1040,23 +1054,23 @@ Click this ? to open Help at the Filters section.">?</button>
         <div class="tableHead">
           <div class="panelTitle" style="margin:0;">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;">
-              <h2 style="margin:0;" id="shotListTitle">Shot list</h2>
+              <h2 style="margin:0;" id="shotListTitle">Shot list (all)</h2>
               <div class="row" style="gap:8px; align-items:center;">
                 
-<select id="layoutPresetSel" class="miniSelect" title="Quick column presets"></select>
-<button class="btn small ghost" id="btnApplyLayoutPreset" type="button" title="Apply selected preset">Apply</button>
+<select id="layoutPresetSel" class="miniSelect" data-sl-title="Quick column presets"><option value="AMP">AMP</option><option value="Chrono">Chrono</option><option value="Diagnostics">Diagnostics</option><option value="Environment">Environment</option><option value="Essential">Essential</option><option value="Full">Full</option><option value="Geometry">Geometry</option><option value="Minimal">Minimal</option><option value="Wind">Wind</option></select>
+<button class="btn small ghost" id="btnApplyLayoutPreset" type="button" data-sl-title="Apply selected preset">Apply</button>
 
-                <button class="btn small ghost" id="btnCols" type="button" title="Column visibility + saved layouts">Columns</button>
-<select id="rowsLimitSel" class="miniSelect" title="Rows shown in All view">
+                <button class="btn small ghost" id="btnCols" type="button" data-sl-title="Column visibility + saved layouts">Columns</button>
+<select id="rowsLimitSel" class="miniSelect" data-sl-title="Rows shown in All view">
   <option value="200">200</option>
   <option value="500">500</option>
   <option value="1000">1000</option>
   <option value="0">All</option>
 </select>
-<button class="btn small ghost" id="btnVirtual" type="button" title="Virtual scroll (flat list) for big shot lists">Virtual</button>
-                <button class="btn small ghost" id="btnDense" type="button" title="Toggle dense row spacing">Dense</button>
-                <button class="btn small ghost" id="btnPreview" type="button" title="Preview changes (what-if) before applying">Preview</button>
-                <button class="btn small ghost" id="btnResetView" type="button" title="Reset sort, density, and scroll">Reset</button>
+<button class="btn small ghost" id="btnVirtual" type="button" data-sl-title="Virtual scroll (flat list) for big shot lists">Virtual</button>
+                <button class="btn small ghost" id="btnDense" type="button" data-sl-title="Toggle dense row spacing">Dense</button>
+                <button class="btn small ghost" id="btnPreview" type="button" data-sl-title="Preview changes (what-if) before applying">Preview</button>
+                <button class="btn small ghost" id="btnResetView" type="button" data-sl-title="Reset sort, density, and scroll">Reset</button>
               </div>
             </div>
             <div class="hint">Tip: click a column header to sort; scroll horizontally inside the table to see all Kestrel columns.</div>
@@ -1073,8 +1087,8 @@ Click this ? to open Help at the Filters section.">?</button>
           <table id="shotTable">
             <thead>
               <tr>
-                <th class="sticky c0">Sel</th>
-                <th data-col="idx" class="sticky c1" data-sort="idx">#</th>
+                <th class="sticky c0" style="display: none;">Sel</th>
+                <th data-col="idx" class="sticky c1 sort-asc" data-sort="idx">#</th>
                 <th data-col="block" class="sticky c2" data-sort="block">Block</th>
                 <th data-col="state" class="sticky c3" data-sort="state">State</th>
                 <th data-col="relTime" data-sort="relTime">Rel time</th>
@@ -1082,10 +1096,13 @@ Click this ? to open Help at the Filters section.">?</button>
                 <th data-col="score" data-sort="score">Score</th>
                 <th data-col="vel" data-sort="vel">Vel</th>
                 <th data-col="velSrc" data-sort="velSrc">Vel Src</th>
-      <th data-col="ampPeak" title="AMP Peak force (from AMP press).">AMP Peak</th>
-      <th data-col="ampWork" title="AMP Work/area under force curve (consistency signal).">AMP Work</th>
-      <th data-col="ampSigma" title="AMP anomaly score: max(|z|) across Peak/Work/Start metrics.">AMP Δ(σ) <span class="hdrInfo" title="AMP Δ(σ) = max(|z|) across AMP Peak / Work / Start.&#10;Colors: ≤0.7σ node-solid • 0.7–1.3σ normal noise • 1.3–1.9σ eyebrow raise • ≥1.9σ real outlier.&#10;Hover each chip for per-metric z-scores.">ⓘ</span></th>
-                <th data-col="dsigma" data-sort="dsigma" title="ΔVel (σ) = (shot velocity − block mean) / block SD (record shots only). Click chip to toggle Exclude.">ΔVel (σ) <span class="hdrInfo" title="ΔVel (σ) = |shot vel − string avg| / string SD using the active velocity source (Garmin if present else SM).&#10;≤0.7σ solid • 0.7–1.3σ normal noise • 1.3–1.9σ eyebrow raise • ≥1.9σ real outlier.">ⓘ</span></th>
+      <th data-col="ampPeak" data-sl-title="AMP Peak force (from AMP press).">AMP Peak</th>
+      <th data-col="ampWork" data-sl-title="AMP Work/area under force curve (consistency signal).">AMP Work</th>
+      <th data-col="ampSigma" data-sl-title="AMP anomaly score: max(|z|) across Peak/Work/Start metrics.">AMP Δ(σ) <span class="hdrInfo" data-sl-title="AMP Δ(σ) = max(|z|) across AMP Peak / Work / Start.
+Colors: ≤0.7σ node-solid • 0.7–1.3σ normal noise • 1.3–1.9σ eyebrow raise • ≥1.9σ real outlier.
+Hover each chip for per-metric z-scores.">ⓘ</span></th>
+                <th data-col="dsigma" data-sort="dsigma" data-sl-title="ΔVel (σ) = (shot velocity − block mean) / block SD (record shots only). Click chip to toggle Exclude.">ΔVel (σ) <span class="hdrInfo" data-sl-title="ΔVel (σ) = |shot vel − string avg| / string SD using the active velocity source (Garmin if present else SM).
+≤0.7σ solid • 0.7–1.3σ normal noise • 1.3–1.9σ eyebrow raise • ≥1.9σ real outlier.">ⓘ</span></th>
                 <th data-col="xIn" data-sort="xIn">X (in)</th>
                 <th data-col="yIn" data-sort="yIn">Y (in)</th>
                 <th data-col="hMoa" data-sort="hMoa">H (MOA)</th>
@@ -1109,15 +1126,15 @@ Click this ? to open Help at the Filters section.">?</button>
                 <th data-col="notes" data-sort="notes">Notes</th>
               </tr>
             </thead>
-            <tbody id="shotTbody"></tbody>
+            <tbody id="shotTbody"><tr><td colspan="34" style="color:rgba(230,238,248,.6); padding:16px;">Load ShotMarker CSV to see shots.</td></tr></tbody>
           </table>
         </div>
       </div>
-    </div>
+    
 
     
 
-</div>
+
 
 <script>
 
@@ -1126,12 +1143,12 @@ Click this ? to open Help at the Filters section.">?</button>
   const APP = {
     name: 'ShotLedger',
     flavor: 'standalone',
-    version: '2.2.2',
+    version: '2.2.6',
     schemaVersion: 2
   };
 
   // Release build flags
-  const SL_BUILD_DATE = '2026-01-03';
+  const SL_BUILD_DATE = '2026-01-04';
   const SL_DEBUG = false;
 
 
@@ -1316,7 +1333,7 @@ let tablePrefs = {
 let filterState = {
   q: '',
   block: '',
-  hideExcluded: true,
+  hideExcluded: false,
   onlyIssues: false,
   onlySighters: false,
   missingJoin: false
@@ -4862,7 +4879,7 @@ el('fileSM').addEventListener('change', async (e)=>{
 }
 
 
-  // ---------- v2.2.2: presets, filters, reset menu, action strip, shortcuts ----------
+  // ---------- v2.2.6: presets, filters, reset menu, action strip, shortcuts ----------
   function scrollToEl(elem){
     if(!elem) return;
     try{ elem.scrollIntoView({behavior:'smooth', block:'start'}); }catch(_e){ elem.scrollIntoView(true); }
@@ -4983,12 +5000,12 @@ el('fileSM').addEventListener('change', async (e)=>{
         filterState.onlyIssues = false;
         filterState.onlySighters = false;
         filterState.missingJoin = false;
-        filterState.hideExcluded = true;
+        filterState.hideExcluded = false;
         if(q) q.value = '';
         if(oi) oi.checked = false;
         if(os) os.checked = false;
         if(mj) mj.checked = false;
-        if(hx) hx.checked = true;
+        if(hx) hx.checked = false;
         if(blk) blk.value = '';
         activeBlock = null;
         renderBlockRollups();
@@ -5093,72 +5110,84 @@ el('fileSM').addEventListener('change', async (e)=>{
   }
 
   // Reset menu modal
+  // NOTE: reset modal markup is after the main script in this single-file build.
+  // Bind after DOMContentLoaded so the elements exist (fixes "Reset" doing nothing).
   {
-    const btn = el('btnResetMenu');
-    const modal = el('resetModal');
-    const closeBtn = el('btnResetClose');
-    const open = ()=>{
-      if(!modal) return;
-      modal.classList.remove('hidden');
-    };
-    const close = ()=>{
-      if(!modal) return;
-      modal.classList.add('hidden');
-    };
-    if(btn && !btn.dataset.wired){
-      btn.addEventListener('click', open);
-      btn.dataset.wired='1';
-    }
-    if(closeBtn && !closeBtn.dataset.wired){
-      closeBtn.addEventListener('click', close);
-      closeBtn.dataset.wired='1';
-    }
-    if(modal && !modal.dataset.wired){
-      modal.addEventListener('click', (e)=>{
-        const t = e.target;
-        if(!(t instanceof HTMLElement)) return;
-        if(t.getAttribute('data-close')==='1') close();
-      });
-      modal.dataset.wired='1';
-    }
-    const rs = el('btnResetSession');
-    const rtp = el('btnResetTablePrefs');
-    const rl = el('btnResetLayouts');
-    const rv = el('btnResetViewFromMenu');
+    const wireResetMenu = ()=>{
+      const btn = el('btnResetMenu');
+      const modal = el('resetModal');
+      const closeBtn = el('btnResetClose');
 
-    if(rs && !rs.dataset.wired){
-      rs.addEventListener('click', ()=>{
-        clearAll();
-        close();
-        toast('Session cleared');
-      });
-      rs.dataset.wired='1';
-    }
-    if(rtp && !rtp.dataset.wired){
-      rtp.addEventListener('click', ()=>{
-        try{ localStorage.removeItem(TABLE_PREFS_KEY); }catch(_e){}
-        loadTablePrefs();
-        close();
-        renderTable();
-        toast('Table prefs reset');
-      });
-      rtp.dataset.wired='1';
-    }
-    if(rl && !rl.dataset.wired){
-      rl.addEventListener('click', ()=>{
-        try{ localStorage.removeItem(TABLE_LAYOUTS_KEY); }catch(_e){}
-        close();
-        toast('Saved layouts reset');
-      });
-      rl.dataset.wired='1';
-    }
-    if(rv && !rv.dataset.wired){
-      rv.addEventListener('click', ()=>{
-        if(el('btnResetView')) el('btnResetView').click();
-        close();
-      });
-      rv.dataset.wired='1';
-    }
+      const open = ()=>{
+        const m = el('resetModal');
+        if(!m) return;
+        m.classList.remove('hidden');
+      };
+      const close = ()=>{
+        const m = el('resetModal');
+        if(!m) return;
+        m.classList.add('hidden');
+      };
+
+      if(btn && !btn.dataset.wired){
+        btn.addEventListener('click', open);
+        btn.dataset.wired='1';
+      }
+      if(closeBtn && !closeBtn.dataset.wired){
+        closeBtn.addEventListener('click', close);
+        closeBtn.dataset.wired='1';
+      }
+      if(modal && !modal.dataset.wired){
+        modal.addEventListener('click', (e)=>{
+          const t = e.target;
+          if(!(t instanceof HTMLElement)) return;
+          if(t.getAttribute('data-close')==='1') close();
+        });
+        modal.dataset.wired='1';
+      }
+
+      const rs = el('btnResetSession');
+      const rtp = el('btnResetTablePrefs');
+      const rl = el('btnResetLayouts');
+      const rv = el('btnResetViewFromMenu');
+
+      if(rs && !rs.dataset.wired){
+        rs.addEventListener('click', ()=>{
+          clearAll();
+          close();
+          toast('Session cleared');
+        });
+        rs.dataset.wired='1';
+      }
+      if(rtp && !rtp.dataset.wired){
+        rtp.addEventListener('click', ()=>{
+          try{ localStorage.removeItem(TABLE_PREFS_KEY); }catch(_e){}
+          loadTablePrefs();
+          close();
+          renderTable();
+          toast('Table prefs reset');
+        });
+        rtp.dataset.wired='1';
+      }
+      if(rl && !rl.dataset.wired){
+        rl.addEventListener('click', ()=>{
+          try{ localStorage.removeItem(TABLE_LAYOUTS_KEY); }catch(_e){}
+          close();
+          toast('Saved layouts reset');
+        });
+        rl.dataset.wired='1';
+      }
+      if(rv && !rv.dataset.wired){
+        rv.addEventListener('click', ()=>{
+          const b = el('btnResetView'); if(b) b.click();
+          close();
+        });
+        rv.dataset.wired='1';
+      }
+    };
+
+    if(document.readyState === 'loading') window.addEventListener('DOMContentLoaded', wireResetMenu);
+    else wireResetMenu();
   }
 
   // Next action bar
@@ -5328,7 +5357,7 @@ el('fileSM').addEventListener('change', async (e)=>{
   renderBlockRollups();
 })();
 
-  // --- v2.2.2: Blue tooltips (replace native title tooltips) ----------------
+  // --- v2.2.6: Blue tooltips (replace native title tooltips) ----------------
   function initBlueTooltips(){
     // Create tooltip element once
     let tip = document.getElementById('slBlueTip');
@@ -5463,7 +5492,7 @@ el('fileSM').addEventListener('change', async (e)=>{
         <div class="modal__title" id="helpTitle">ShotLedger — how to use it</div>
         <div class="modal__sub">Built for 1000-yard reality: vertical is king; velocity is context.</div>
       </div>
-      <button class="btn small ghost" id="btnHelpClose" type="button" title="Close">Close</button>
+      <button class="btn small ghost" id="btnHelpClose" type="button" data-sl-title="Close">Close</button>
     </div>
     <div class="modal__body">
       <div class="modal__section">
@@ -5506,7 +5535,7 @@ el('fileSM').addEventListener('change', async (e)=>{
 
       
       <div class="modal__section" id="helpFilters">
-        <div class="modal__h">Filters & views</div>
+        <div class="modal__h">Filters &amp; views</div>
         <ul>
           <li><b>Search</b> matches block name, tag, notes, and numeric fields (like score) where applicable.</li>
           <li><b>Hide excluded</b> removes ✕ rows from the table view (stats already ignore them).</li>
@@ -5542,14 +5571,14 @@ el('fileSM').addEventListener('change', async (e)=>{
       </div>
     </div></div>
   </div>
-</div>
+
 
 <!-- Columns & Layouts Modal (Phase 0) -->
 <div class="modal hidden" id="colsModal" role="dialog" aria-modal="true">
   <div class="modalCard" style="max-width:920px;">
     <div class="modalHead">
       <div>
-        <b>Columns & Layouts</b>
+        <b>Columns &amp; Layouts</b>
         <div class="hint">Hide/unhide columns, pick presets, and save layouts (stored in this browser).</div>
       </div>
       <button class="btn small ghost" id="btnColsClose" type="button">Close</button>
@@ -5609,5 +5638,6 @@ el('fileSM').addEventListener('change', async (e)=>{
   </div>
 </div>
 
-</body>
-</html>
+
+
+<div id="slBlueTip"></div></body></html>
