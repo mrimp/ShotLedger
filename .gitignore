@@ -7,3 +7,7 @@ Thumbs.db
 
 # misc
 *.log
+
+# browser saved-page artifacts
+*_files/
+css2

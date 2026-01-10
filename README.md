@@ -1,40 +1,22 @@
-# ShotLedger — v1.6-FINAL
+# ShotLedger — v2.2.6
 
-Single-file, fully offline HTML app to merge **ShotMarker** targets with **chrono (Garmin)**, optional **Kestrel** weather logs, and optional **AMP** traces — then review shots, flags, and per-target summaries.
+ShotLedger is a **single-file, offline HTML** tool for pairing ShotMarker + Chrono/Garmin (+ optional Kestrel/AMP) and reviewing your strings fast.
 
-Run it
-Live (GitHub Pages): https://mrimp.github.io/ShotLedger/
+**Live (GitHub Pages):** https://mrimp.github.io/ShotLedger/
 
 ## Quick start
-1. Download the repo ZIP and unzip.
-2. Open `index.html` in a desktop browser (Chrome/Edge recommended).
-3. Import your files:
-   - ShotMarker CSV (multi-target)
-   - Chrono files (one per target/string; mapping UI handles ordering mistakes)
-   - Optional: Kestrel CSV
-   - Optional: AMP CSV
-4. Pair chrono ↔ target (dropdowns) if needed.
-5. Review:
-   - Target headers include **join health** (G/K/A coverage on record shots)
-   - Per-target mini baselines (avg vel, ES/SD, etc.)
-   - Per-shot flags and notes
+- **Web:** open the GitHub Pages link above (or `index.html` in the repo root).
+- **Offline:** download the repo and open `ShotLedger_Latest.html` directly in your browser.
 
-## What’s in this release (v1.6-FINAL)
-- Join health in the target header (Garmin/Kestrel/AMP coverage)
-- Per-target baselines in the rollup bar
-- AMP rendered as an import pill (no leftover status text)
-- Notes UI toned down (dark theme aligned)
-- Extra spacing below chart/table region
-- Table sorting + **Reset Defaults** button
+## Files
+- `index.html` → redirects to the latest build (GitHub Pages entry point)
+- `ShotLedger_Latest.html` → the current single‑file app (offline)
+- `releases/` → pinned release builds
 
-## Data & privacy
-Everything runs locally in your browser. No network calls, no telemetry.
+## Notes
+- Designed to work **offline** (no external JS/CSS, no CDNs).
+- Excluding a shot **keeps the row visible** and grays it out (non-destructive).
+- “Reset” is wired to restore the table view and preferences.
 
-## GitHub Pages
-This repo is already Pages-ready because the app is `index.html`.
-
-- Settings → Pages → Deploy from branch → `main` / `(root)`
-- After it publishes, you can load the app from the Pages URL.
-
-## Support / bugs
-If something looks off, grab a screenshot + the browser console error (if any) and open an issue.
+## License
+See `LICENSE`.

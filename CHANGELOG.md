@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.2.6 — 2026-01-04
+
+### Fixes
+- Removed extension-injected HTML/CSS artifacts and external `css2` references (prevents 404s / console noise on GitHub Pages).
+- Exclude (✕) now keeps rows visible and grays them out (non-destructive).
+- Reset wiring hardened so the UI reliably restores view and preferences.
+
+
 ## v2.0.0 — 2025-12-31
 
 ### Phase 1 — Clarity & Safety
