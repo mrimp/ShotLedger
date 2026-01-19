@@ -1,4 +1,4 @@
-# ShotLedger — v2.2.6
+# ShotLedger — v2.3.0
 
 ShotLedger is a **single-file, offline HTML** tool for pairing ShotMarker + Chrono/Garmin (+ optional Kestrel/AMP) and reviewing your strings fast.
 
